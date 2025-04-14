@@ -46,20 +46,20 @@ interface Order {
 }
 
 export default function OrderDetails() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{ id: string; }>();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  
+
   // Use the Order interface to type the order state variable
   interface RootState {
     order: {
       order: Order | null;
       loading: boolean;
-    }
+    };
   }
-  
+
   const { order, loading } = useSelector((state: RootState) => state.order);
-  
+
   useEffect(() => {
     if (id) {
       // Use type assertion to ensure id is treated as a string
@@ -97,7 +97,7 @@ export default function OrderDetails() {
               <div className="space-y-1 text-left">
                 <p className="text-xl font-medium">Order ID: {order?.orderNo}</p>
                 <p className="text-sm font-normal text-muted-foreground">
-                  {formatDate(order?.createdAt)}
+                  {formatDate(order?.createdAt!)}
                 </p>
               </div>
             </div>
@@ -106,7 +106,7 @@ export default function OrderDetails() {
 
             <div className="flex flex-col gap-2">
               <p className="text-lg font-medium">
-                PO Number: <span className="text-muted-foreground">{order?.poNumber}</span>
+                PO Number: <span className="text-muted-foreground">{order?.poNumber || "N/A"}</span>
               </p>
               <p className="text-lg font-medium">
                 Delivery Date:{" "}
@@ -119,7 +119,7 @@ export default function OrderDetails() {
                 <span className="text-muted-foreground">{order?.pickupLocation}</span>
               </p>
               <p className="text-lg font-medium">
-                Comments: <span className="text-muted-foreground">{order?.comments}</span>
+                Comments: <span className="text-muted-foreground">{order?.comments || "N/A"}</span>
               </p>
             </div>
           </div>

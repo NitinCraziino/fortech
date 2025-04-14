@@ -84,209 +84,209 @@ export function OrdersTable(props: {
             />
           ),
         },
-          {
-            accessorKey: "orderNo",
-            header: ({ column }) => {
-              return (
+        {
+          accessorKey: "orderNo",
+          header: ({ column }) => {
+            return (
+              <Button
+                variant="ghost"
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                className="flex items-center gap-2"
+              >
+                Order Number
+                <ChevronsUpDown className="h-4 w-4" />
+              </Button>
+            );
+          },
+          cell: ({ row }) => <div className="ms-4">{row.getValue("orderNo")}</div>,
+        },
+        {
+          accessorKey: "poNumber",
+          header: ({ column }) => {
+            return (
+              <Button
+                variant="ghost"
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                className="flex items-center gap-2"
+              >
+                PO #
+                <ChevronsUpDown className="h-4 w-4" />
+              </Button>
+            );
+          },
+          cell: ({ row }) => <div className="ms-4">{row.getValue("poNumber") || "N/A"}</div>,
+        },
+        {
+          accessorKey: "deliveryDate",
+          header: ({ column }) => {
+            return (
+              <Button
+                variant="ghost"
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                className="flex items-center gap-2"
+              >
+                Delivery Date
+                <ChevronsUpDown className="h-4 w-4" />
+              </Button>
+            );
+          },
+          cell: ({ row }) => <div className="ms-4">{row.getValue("deliveryDate") ? formatDate(row.getValue("deliveryDate")) : 'N/A'}</div>,
+        },
+        {
+          accessorKey: "pickupLocation",
+          header: ({ column }) => {
+            return (
+              <Button
+                variant="ghost"
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                className="flex items-center gap-2"
+              >
+                Shipping Address
+                <ChevronsUpDown className="h-4 w-4" />
+              </Button>
+            );
+          },
+          cell: ({ row }) => <div className="ms-4">{row.getValue("pickupLocation")}</div>,
+        },
+        {
+          accessorKey: "userId",
+          header: ({ column }) => {
+            return (
+              <Button
+                variant="ghost"
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                className="flex items-center gap-2"
+              >
+                Customer Name
+                <ChevronsUpDown className="h-4 w-4" />
+              </Button>
+            );
+          },
+          cell: ({ row }) => <div className="ms-4">{row.original.userId.name}</div>,
+        },
+        {
+          accessorKey: "totalPrice",
+          header: () => {
+            return <div className="text-center">Total Amount</div>;
+          },
+          cell: ({ row }) => <div className="text-center">$ {row.getValue("totalPrice")}</div>,
+        },
+        {
+          id: "actions",
+          header: () => {
+            return <div className="text-center">Actions</div>;
+          },
+          enableHiding: false,
+          cell: ({ row }) => {
+            return (
+              <div className="flex items-center justify-center">
                 <Button
+                  onClick={() => props.viewOrder(row.original._id)}
                   variant="ghost"
-                  onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                  className="flex items-center gap-2"
+                  size="icon"
+                  className="h-8 w-8"
                 >
-                  Order Number
-                  <ChevronsUpDown className="h-4 w-4" />
+                  <Eye className="h-4 w-4" />
                 </Button>
-              );
-            },
-            cell: ({ row }) => <div className="ms-4">{row.getValue("orderNo")}</div>,
+              </div>
+            );
           },
-          {
-            accessorKey: "poNumber",
-            header: ({ column }) => {
-              return (
-                <Button
-                  variant="ghost"
-                  onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                  className="flex items-center gap-2"
-                >
-                  PO #
-                  <ChevronsUpDown className="h-4 w-4" />
-                </Button>
-              );
-            },
-            cell: ({ row }) => <div className="ms-4">{row.getValue("poNumber")}</div>,
-          },
-          {
-            accessorKey: "deliveryDate",
-            header: ({ column }) => {
-              return (
-                <Button
-                  variant="ghost"
-                  onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                  className="flex items-center gap-2"
-                >
-                  Delivery Date
-                  <ChevronsUpDown className="h-4 w-4" />
-                </Button>
-              );
-            },
-            cell: ({ row }) => <div className="ms-4">{row.getValue("deliveryDate")?formatDate(row.getValue("deliveryDate")): 'N/A'}</div>,
-          },
-          {
-            accessorKey: "pickupLocation",
-            header: ({ column }) => {
-              return (
-                <Button
-                  variant="ghost"
-                  onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                  className="flex items-center gap-2"
-                >
-                  Shipping Address
-                  <ChevronsUpDown className="h-4 w-4" />
-                </Button>
-              );
-            },
-            cell: ({ row }) => <div className="ms-4">{row.getValue("pickupLocation")}</div>,
-          },
-          {
-            accessorKey: "userId",
-            header: ({ column }) => {
-              return (
-                <Button
-                  variant="ghost"
-                  onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                  className="flex items-center gap-2"
-                >
-                  Customer Name
-                  <ChevronsUpDown className="h-4 w-4" />
-                </Button>
-              );
-            },
-            cell: ({ row }) => <div className="ms-4">{row.original.userId.name}</div>,
-          },
-          {
-            accessorKey: "totalPrice",
-            header: () => {
-              return <div className="text-center">Total Amount</div>;
-            },
-            cell: ({ row }) => <div className="text-center">$ {row.getValue("totalPrice").toFixed(2)}</div>,
-          },
-          {
-            id: "actions",
-            header: () => {
-              return <div className="text-center">Actions</div>;
-            },
-            enableHiding: false,
-            cell: ({ row }) => {
-              return (
-                <div className="flex items-center justify-center">
-                  <Button
-                    onClick={() => props.viewOrder(row.original._id)}
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </div>
-              );
-            },
-          },
-        ]
+        },
+      ]
       : [
-          {
-            accessorKey: "orderNo",
-            header: ({ column }) => {
-              return (
+        {
+          accessorKey: "orderNo",
+          header: ({ column }) => {
+            return (
+              <Button
+                variant="ghost"
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                className="flex items-center gap-2"
+              >
+                Order Number
+                <ChevronsUpDown className="h-4 w-4" />
+              </Button>
+            );
+          },
+          cell: ({ row }) => <div className="ms-4">{row.getValue("orderNo")}</div>,
+        },
+        {
+          accessorKey: "poNumber",
+          header: ({ column }) => {
+            return (
+              <Button
+                variant="ghost"
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                className="flex items-center gap-2"
+              >
+                PO #
+                <ChevronsUpDown className="h-4 w-4" />
+              </Button>
+            );
+          },
+          cell: ({ row }) => <div className="ms-4">{row.getValue("poNumber") || "N/A"}</div>,
+        },
+        {
+          accessorKey: "deliveryDate",
+          header: ({ column }) => {
+            return (
+              <Button
+                variant="ghost"
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                className="flex items-center gap-2"
+              >
+                Delivery Date
+                <ChevronsUpDown className="h-4 w-4" />
+              </Button>
+            );
+          },
+          cell: ({ row }) => <div className="ms-4">{row.getValue("deliveryDate") ? formatDate(row.getValue("deliveryDate")) : 'N/A'}</div>,
+        },
+        {
+          accessorKey: "pickupLocation",
+          header: ({ column }) => {
+            return (
+              <Button
+                variant="ghost"
+                onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                className="flex items-center gap-2"
+              >
+                Shipping Address
+                <ChevronsUpDown className="h-4 w-4" />
+              </Button>
+            );
+          },
+          cell: ({ row }) => <div className="ms-4">{row.getValue("pickupLocation")}</div>,
+        },
+        {
+          accessorKey: "totalPrice",
+          header: () => {
+            return <div className="text-center">Total Amount</div>;
+          },
+          cell: ({ row }) => <div className="text-center">$ {row.getValue("totalPrice")}</div>,
+        },
+        {
+          id: "actions",
+          header: () => {
+            return <div className="text-center">Actions</div>;
+          },
+          enableHiding: false,
+          cell: ({ row }) => {
+            return (
+              <div className="flex items-center justify-center">
                 <Button
+                  onClick={() => props.viewOrder(row.original._id)}
                   variant="ghost"
-                  onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                  className="flex items-center gap-2"
+                  size="icon"
+                  className="h-8 w-8"
                 >
-                  Order Number
-                  <ChevronsUpDown className="h-4 w-4" />
+                  <Eye className="h-4 w-4" />
                 </Button>
-              );
-            },
-            cell: ({ row }) => <div className="ms-4">{row.getValue("orderNo")}</div>,
+              </div>
+            );
           },
-          {
-            accessorKey: "poNumber",
-            header: ({ column }) => {
-              return (
-                <Button
-                  variant="ghost"
-                  onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                  className="flex items-center gap-2"
-                >
-                  PO #
-                  <ChevronsUpDown className="h-4 w-4" />
-                </Button>
-              );
-            },
-            cell: ({ row }) => <div className="ms-4">{row.getValue("poNumber")}</div>,
-          },
-          {
-            accessorKey: "deliveryDate",
-            header: ({ column }) => {
-              return (
-                <Button
-                  variant="ghost"
-                  onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                  className="flex items-center gap-2"
-                >
-                  Delivery Date
-                  <ChevronsUpDown className="h-4 w-4" />
-                </Button>
-              );
-            },
-            cell: ({ row }) => <div className="ms-4">{row.getValue("deliveryDate")?formatDate(row.getValue("deliveryDate")): 'N/A'}</div>,
-          },
-          {
-            accessorKey: "pickupLocation",
-            header: ({ column }) => {
-              return (
-                <Button
-                  variant="ghost"
-                  onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-                  className="flex items-center gap-2"
-                >
-                  Shipping Address
-                  <ChevronsUpDown className="h-4 w-4" />
-                </Button>
-              );
-            },
-            cell: ({ row }) => <div className="ms-4">{row.getValue("pickupLocation")}</div>,
-          },
-          {
-            accessorKey: "totalPrice",
-            header: () => {
-              return <div className="text-center">Total Amount</div>;
-            },
-            cell: ({ row }) => <div className="text-center">$ {row.getValue("totalPrice")}</div>,
-          },
-          {
-            id: "actions",
-            header: () => {
-              return <div className="text-center">Actions</div>;
-            },
-            enableHiding: false,
-            cell: ({ row }) => {
-              return (
-                <div className="flex items-center justify-center">
-                  <Button
-                    onClick={() => props.viewOrder(row.original._id)}
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </div>
-              );
-            },
-          },
-        ];
+        },
+      ];
     return columns;
   };
 
@@ -318,7 +318,7 @@ export function OrdersTable(props: {
       columnFilters,
       columnVisibility,
       rowSelection,
-      pagination: {pageIndex: props.pageIndex-1, pageSize: props.pageSize}
+      pagination: { pageIndex: props.pageIndex - 1, pageSize: props.pageSize }
     },
   });
 

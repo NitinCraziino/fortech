@@ -65,6 +65,8 @@ export const createOrderAsync = createAsyncThunk(
       };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
+      console.log("🚀 ~ error:", error);
+
       const message = error?.response?.data.message; // Return error in case of failure
       return rejectWithValue(message ? message : "Create order failed. Please try again.");
     }
@@ -74,7 +76,7 @@ export const createOrderAsync = createAsyncThunk(
 export const getOrdersAsync = createAsyncThunk(
   "order/get",
   // eslint-disable-next-line no-empty-pattern, @typescript-eslint/no-explicit-any
-  async ({ userId }: { userId: string }, { rejectWithValue }) => {
+  async ({ userId }: { userId: string; }, { rejectWithValue }) => {
     try {
       const response = await getApi(GETUSERORDERS.replace(":userId", userId), {}, {}, false);
       console.log("🚀 ~ response:", response);
@@ -95,7 +97,7 @@ export const getOrdersAsync = createAsyncThunk(
 
 export const getOrderById = createAsyncThunk(
   "order/getById",
-  async ({ _id }: { _id: string }, { rejectWithValue }) => {
+  async ({ _id }: { _id: string; }, { rejectWithValue }) => {
     try {
       const response = await getApi(GETORDER.replace(":id", _id), {}, {}, false);
 
@@ -137,14 +139,14 @@ export const exportOrderAsync = createAsyncThunk(
   "order/export",
   async (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    { orderIds }: { orderIds: string[] },
+    { orderIds }: { orderIds: string[]; },
     { rejectWithValue }
   ) => {
     try {
-      const response = await postApi(EXPORTORDERS, {orderIds}, {}, false);
+      const response = await postApi(EXPORTORDERS, { orderIds }, {}, false);
 
       // Assuming the response contains user data and token
-      window.open(response.fileUrl, "_blank")
+      window.open(response.fileUrl, "_blank");
       return {
         fileUrl: response.fileUrl,
       };
@@ -177,7 +179,7 @@ const orderSlice = createSlice({
         state.error = action.payload as string;
       });
 
-      builder
+    builder
       .addCase(exportOrderAsync.pending, (state) => {
         state.loading = true;
         state.error = null;

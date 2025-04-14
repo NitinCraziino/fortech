@@ -90,37 +90,37 @@ export default function CreateOrder() {
   const { user } = useSelector((state: any) => state.auth);
   // Extract taxEnabled from customer object
   const taxEnabled = user?.taxEnabled || false;
-  
+
   const [orderFormData, setOrderFormData] = useState<OrderDetails>({
     poNumber: "",
     deliveryDate: new Date(),
     comments: "",
     pickupLocation: "",
   });
-  
+
   const [rows, setRows] = useState<ProductRow[]>([{ ...INITIAL_ROW }]);
   const [errors, setErrors] = useState<ProductError[]>([{ idError: null, quantityError: null }]);
   const [orderError, setOrderErrors] = useState<OrderDetailError>({
     poNumber: null,
     pickupLocation: null,
   });
-  
+
   const [subTotal, setSubTotal] = useState<number>(0);
   const [taxTotal, setTaxTotal] = useState<number>(0);
   const [totalPrice, setTotalPrice] = useState<number>(0);
-  
+
   const calculateTotal = (rowsData: ProductRow[]) => {
     // Calculate subtotal from all rows
     const sub = rowsData.reduce((sum, row) => {
       return sum + row.amount;
     }, 0);
-    
+
     // Calculate tax on the subtotal if tax is enabled
     const tax = taxEnabled ? Number((sub * TAX_RATE).toFixed(2)) : 0;
-    
+
     // Calculate total price (subtotal + tax)
     const total = sub + tax;
-    
+
     setSubTotal(sub);
     setTaxTotal(tax);
     setTotalPrice(total);
@@ -199,19 +199,10 @@ export default function CreateOrder() {
 
   const validateField = (fieldName: string) => {
     let error = "";
-    switch (fieldName) {
-      case "poNumber":
-        if (!orderFormData.poNumber.trim()) {
-          error = "PO number is required.";
-        }
-        break;
-      case "pickupLocation":
-        if (!orderFormData.pickupLocation.trim()) {
-          error = "Shipping address is required.";
-        }
-        break;
-      default:
-        break;
+    if (fieldName === "pickupLocation") {
+      if (!orderFormData.pickupLocation.trim()) {
+        error = "Shipping address is required.";
+      }
     }
 
     setOrderErrors((prevErrors) => ({
@@ -226,11 +217,15 @@ export default function CreateOrder() {
 
   const validateForm = (): boolean => {
     let isValid = true;
-    const fieldNames = ["poNumber", "pickupLocation"];
+    const fieldNames = ["pickupLocation"];
 
     fieldNames.forEach((field) => {
       validateField(field);
       if (errors[field as keyof typeof errors]) {
+        isValid = false;
+      }
+      if (orderError[field as keyof typeof orderError]) {
+        console.log("Order error", orderError[field as keyof typeof orderError]);
         isValid = false;
       }
     });
@@ -239,7 +234,7 @@ export default function CreateOrder() {
   };
 
   const handleSubmit = async () => {
-    if (!validateProducts() || !validateForm()) {
+    if (!validateForm() || !validateProducts()) {
       console.log("Validation failed.");
       return;
     }
@@ -281,9 +276,9 @@ export default function CreateOrder() {
         </Button>
         {/* <h1 className="text-2xl font-medium">Create Order</h1> */}
       </div>
-     
+
       <div className="max-w-[900px] w-full mb-6">
-      <h1 className="text-2xl font-medium">Product Details</h1>
+        <h1 className="text-2xl font-medium">Product Details</h1>
         <Card className="flex flex-col gap-4 mb-6 bg-[#F2F2F2] border-none shadow-none p-4">
           <div className="p-4 bg-white rounded-lg border border-input">
             <div className="grid grid-cols-[minmax(200px,2fr),120px,minmax(200px,2fr),120px,80px] gap-4 mb-2 relative">
@@ -311,7 +306,7 @@ export default function CreateOrder() {
                         <SelectValue placeholder="Select Product" />
                       </SelectTrigger>
                       <SelectContent>
-                        {products.map((product: { _id: string; partNo: string; description: string }) => {
+                        {products.map((product: { _id: string; partNo: string; description: string; }) => {
                           return (
                             <SelectItem key={product._id} value={product._id}>
                               {product.partNo} ({product.description})

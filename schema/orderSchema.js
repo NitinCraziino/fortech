@@ -5,26 +5,26 @@ const generateOrderNumber = () => {
 };
 const OrderSchema = new mongoose.Schema(
   {
-    orderNo: { type: String, required: true, unique: true, default: generateOrderNumber },
+    orderNo: {type: String, required: true, unique: true, default: generateOrderNumber},
     products: [
       {
-        productId: { 
-          type: mongoose.Schema.Types.ObjectId, 
+        productId: {
+          type: mongoose.Schema.Types.ObjectId,
           ref: "Product", // Reference to Product schema
-          required: true 
+          required: true
         },
-        quantity: { 
-          type: Number, 
-          required: true, 
-          min: 1 
+        quantity: {
+          type: Number,
+          required: true,
+          min: 1
         },
-        price: { 
-          type: Number, 
-          required: true 
+        price: {
+          type: Number,
+          required: true
         }
       }
     ],
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    userId: {type: mongoose.Schema.Types.ObjectId, ref: "User", required: true},
     pickupLocation: {
       type: String,
       required: true,
@@ -49,10 +49,13 @@ const OrderSchema = new mongoose.Schema(
       required: true,
     },
     comments: String,
-    poNumber: {type: String, required: true},
-    deliveryDate: String
+    poNumber: {
+      type: String,
+      required: false,
+    },
+    deliveryDate: String,
   },
-  { timestamps: true }
+  {timestamps: true}
 );
 
 const Order = mongoose.model("Order", OrderSchema);

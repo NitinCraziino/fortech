@@ -23,9 +23,9 @@ const ProductSchema = new mongoose.Schema(
     },
     image: String,
     active: Boolean,
-    isDeleted: { type: Boolean, default: false },
+    isDeleted: {type: Boolean, default: false},
   },
-  { timestamps: true }
+  {timestamps: true}
 );
 
 const Product = mongoose.model("Product", ProductSchema);

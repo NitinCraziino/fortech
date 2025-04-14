@@ -1,6 +1,6 @@
 import axios from "axios";
- const apiUrl = 'https://www.naisorders.com/api';
-//const apiUrl = 'http://localhost:3000/api';
+//  const apiUrl = 'https://www.naisorders.com/api';
+const apiUrl = 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: apiUrl,
@@ -29,7 +29,7 @@ api.interceptors.response.use(
     };
     if (error.response?.status === 401) {
       console.error("Unauthorized! Logging out...");
-      
+
       // Clear user authentication data (e.g., token)
       localStorage.removeItem("token"); // Example: remove JWT from localStorage
       window.location.href = "/login";
