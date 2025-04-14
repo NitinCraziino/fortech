@@ -38,7 +38,7 @@ const CustomerProductsPrices: React.FC = () => {
   const { errorToast, success } = useToastActions();
   const [filterText, setFilterText] = useState("");
   const dispatch = useDispatch<AppDispatch>();
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{ id: string; }>();
   const [isDialogOpen, setDialogeOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -48,10 +48,10 @@ const CustomerProductsPrices: React.FC = () => {
     productId: string;
     customerPrice: number;
   }>({ productId: "", customerPrice: 0 });
-  const { customerPrices, loading, error } = useSelector((state: { product: ProductState }) => state.product);  
+  const { customerPrices, loading, error } = useSelector((state: { product: ProductState; }) => state.product);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { customer } = useSelector((state: any) => state.customer);
-  console.log("🚀 ~ customer:", customer)
+  console.log("🚀 ~ customer:", customer);
   useEffect(() => {
     if (id) {
       dispatch(getCustomerPricesAsync({ userId: id }));
@@ -115,9 +115,9 @@ const CustomerProductsPrices: React.FC = () => {
         await dispatch(updateCustomerTaxStatusAsync({ customerId: id, status: !customer?.taxEnabled })).unwrap();
         success("Tax status updated successfully");
       }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      console.log("🚀 ~ handleTaxToggle ~ error:", error)
+      console.log("🚀 ~ handleTaxToggle ~ error:", error);
       errorToast("Failed to update tax status");
     }
   };
