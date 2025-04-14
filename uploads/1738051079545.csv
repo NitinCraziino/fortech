@@ -1,0 +1,4 @@
+partNo,productName,description,newPrice,customerEmail,customerPrice
+12345678,product CSV,product updated with csv,800,nitin@yopmail.com,900
+3453453,Product CSV 2,product updated with csv,900,nitin@yopmail.com,1000
+99454545,Product CSV 3,product updated with csv,1000,,
