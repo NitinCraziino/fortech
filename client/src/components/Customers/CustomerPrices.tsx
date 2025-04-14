@@ -166,7 +166,7 @@ const CustomerProductsPrices: React.FC = () => {
             )}
           </div>
         </div>
-        <div className="rounded-md border">
+        <div className="rounded-md">
           <UpdatePriceModal
             open={isDialogOpen}
             updatePrice={(price: number) => updateCustomerPrice(price)}

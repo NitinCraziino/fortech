@@ -1,16 +1,23 @@
-import { ColumnDef, ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, SortingState, useReactTable, VisibilityState } from "@tanstack/react-table";
+"use client";
+
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  type ColumnDef,
+  type ColumnFiltersState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  type SortingState,
+  useReactTable,
+  type VisibilityState,
+} from "@tanstack/react-table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "../ui/button";
 import { Pencil } from "lucide-react";
 import React from "react";
 import { Checkbox } from "../ui/checkbox";
+import { Pagination } from "../Pagination/Pagination";
 
 type Product = {
   _id: string;
@@ -20,7 +27,7 @@ type Product = {
   image?: string;
 };
 
-const CustomerProductTable = ({
+const CustomerProductPricesTable = ({
   customerPrices,
   editPrice,
   filterText,
@@ -28,7 +35,7 @@ const CustomerProductTable = ({
   isAllSelected,
   selectAll,
   setSelectedProducts,
-  selectedProducts
+  selectedProducts,
 }: {
   customerPrices: Product[];
   editPrice: (productId: string, customerPrice: number) => void;
@@ -40,15 +47,13 @@ const CustomerProductTable = ({
   selectedProducts: string[];
 }) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [pageIndex, setPageIndex] = React.useState(1);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
   const getCols = () => {
-
     const columns: ColumnDef<Product>[] = [
       {
         id: "select-col",
@@ -149,47 +154,63 @@ const CustomerProductTable = ({
       columnFilters,
       columnVisibility,
       rowSelection,
+      pagination: {
+        pageIndex: pageIndex - 1, // TanStack Table uses 0-based indexing
+        pageSize: rowsPerPage,
+      },
     },
+    manualPagination: false,
+    pageCount: Math.ceil(customerPrices.length / rowsPerPage),
   });
 
   return (
-    <Table>
-      <TableHeader>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => {
-              return (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
-              );
-            })}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {table.getRowModel().rows?.length ? (
-          table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
+    <div className="w-full flex flex-col gap-2 items-center">
+      <Table className="w-full rounded-md border">
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => {
+                return (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                );
+              })}
             </TableRow>
-          ))
-        ) : (
-          <TableRow>
-            <TableCell colSpan={getCols().length} className="h-24 text-center">
-              No results.
-            </TableCell>
-          </TableRow>
-        )}
-      </TableBody>
-    </Table>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows?.length ? (
+            table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={getCols().length} className="h-24 text-center">
+                No results.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+      <div className="w-full px-4">
+        <Pagination
+          currentPage={pageIndex}
+          totalPages={Math.ceil(table.getFilteredRowModel().rows.length / rowsPerPage)}
+          rowsPerPage={rowsPerPage}
+          onPageChange={(page) => setPageIndex(page)}
+          onRowsPerPageChange={(rows) => {
+            setRowsPerPage(rows);
+            setPageIndex(1);
+          }}
+        />
+      </div>
+    </div>
   );
 };
 
-export default CustomerProductTable;
+export default CustomerProductPricesTable;
