@@ -4,6 +4,7 @@ const User = require("../schema/userSchema");
 const csvParser = require("csv-parser");
 const fs = require("fs");
 const CustomerProduct = require("../schema/customerProductSchema");
+const mongoose = require("mongoose");
 const createProduct = async (req, res) => {
   try {
     const image = req.file ? `/uploads/${req.file.filename}` : null;
@@ -351,27 +352,73 @@ const assignProductsToCustomers = async (req, res) => {
     });
 
     if (customers.length !== customerIds.length) {
-      return res.status(400).json({error: "One or more customers not found or are admins"});
+      return res.status(400).json({error: "One or more customers not found, or are admins"});
     }
 
-    // Create bulk operations for each assignment
-    const bulkOps = assignments.map(assignment => ({
-      updateOne: {
-        filter: {customerId: assignment.customerId},
-        update: {
-          $addToSet: {
-            products: {
-              productId: assignment.productId,
-              price: assignment.price
+    // Process each assignment
+    const bulkOps = [];
+
+    for (const assignment of assignments) {
+      const customerProductsDoc = await CustomerProduct.findOne({
+        customerId: assignment.customerId
+      });
+
+      if (customerProductsDoc) {
+        const existingProductIndex = customerProductsDoc.products.findIndex(
+          p => p.productId.toString() === assignment.productId
+        );
+
+        if (existingProductIndex >= 0) {
+          // Update the price of existing product assignment
+          bulkOps.push({
+            updateOne: {
+              filter: {
+                customerId: assignment.customerId,
+                "products.productId": new mongoose.Types.ObjectId(assignment.productId)
+              },
+              update: {
+                $set: {
+                  "products.$.price": assignment.price
+                }
+              }
+            }
+          });
+        } else {
+          // Add new product to existing customer
+          bulkOps.push({
+            updateOne: {
+              filter: {customerId: assignment.customerId},
+              update: {
+                $push: {
+                  products: {
+                    productId: assignment.productId,
+                    price: assignment.price
+                  }
+                }
+              }
+            }
+          });
+        }
+      } else {
+        // Create new customer-products entry if it doesn't exist
+        bulkOps.push({
+          insertOne: {
+            document: {
+              customerId: assignment.customerId,
+              products: [{
+                productId: assignment.productId,
+                price: assignment.price
+              }]
             }
           }
-        },
-        upsert: true
+        });
       }
-    }));
+    }
 
-    // Execute bulk operations
-    await CustomerProduct.bulkWrite(bulkOps);
+    // Execute bulk operations if there are any
+    if (bulkOps.length > 0) {
+      await CustomerProduct.bulkWrite(bulkOps);
+    }
 
     res.status(200).json({message: "Products assigned successfully"});
   } catch (error) {
