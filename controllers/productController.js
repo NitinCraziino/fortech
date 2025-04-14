@@ -17,9 +17,9 @@ const createProduct = async (req, res) => {
       name: req.body.name,
     });
     const savedProduct = await newProduct.save();
-    res.status(200).json({ product: savedProduct });
+    res.status(200).json({product: savedProduct});
   } catch (error) {
-    res.status(500).json({ error: error.message || "Error creating product." });
+    res.status(500).json({error: error.message || "Error creating product."});
   }
 };
 
@@ -28,15 +28,15 @@ const updateProductStatus = async (req, res) => {
     const productId = req.body.productId;
     const updatedProduct = await Product.findByIdAndUpdate(
       productId,
-      { active: req.body.active },
-      { new: true } // Return the updated document
+      {active: req.body.active},
+      {new: true} // Return the updated document
     );
     if (!updatedProduct) {
-      res.status(400).json({ error: "Invalid product" });
+      res.status(400).json({error: "Invalid product"});
     }
-    res.status(200).json({ product: updatedProduct });
+    res.status(200).json({product: updatedProduct});
   } catch (error) {
-    res.status(500).json({ error: error.message || "Error updating product." });
+    res.status(500).json({error: error.message || "Error updating product."});
   }
 };
 
@@ -47,9 +47,9 @@ const editProduct = async (req, res) => {
     if (req.file) {
       image = `/uploads/${req.file.filename}`;
     }
-    const productData = await Product.findOne({ _id: productId }).lean().exec();
+    const productData = await Product.findOne({_id: productId}).lean().exec();
     if (!productData) {
-      res.status(400).json({ error: "Invalid product." });
+      res.status(400).json({error: "Invalid product."});
     }
     const updates = {
       name: req.body.name,
@@ -59,25 +59,25 @@ const editProduct = async (req, res) => {
       unitPrice: req.body.unitPrice,
       image: image ? image : productData.image, // Store the image URL
     };
-    await Product.updateOne({ _id: productId }, updates);
-    res.status(200).json({ message: "success" });
+    await Product.updateOne({_id: productId}, updates);
+    res.status(200).json({message: "success"});
   } catch (error) {
-    res.status(500).json({ error: error.message || "Error updating product." });
+    res.status(500).json({error: error.message || "Error updating product."});
   }
 };
 
 const getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 }).lean().exec();
-    res.status(200).json({ products });
+    const products = await Product.find().sort({createdAt: -1}).lean().exec();
+    res.status(200).json({products});
   } catch (error) {
-    res.status(500).json({ error: error.message || "Error getting products." });
+    res.status(500).json({error: error.message || "Error getting products."});
   }
 };
 
 const getCustomerProducts = async (req, res) => {
   try {
-    const customerProduct = await CustomerProduct.findOne({ customerId: req.user._id })
+    const customerProduct = await CustomerProduct.findOne({customerId: req.user._id})
       .populate("products.productId")
       .lean();
     if (customerProduct && customerProduct.products.length > 0) {
@@ -86,21 +86,21 @@ const getCustomerProducts = async (req, res) => {
         customerPrice: p.price,
         // Attach full product details
       }));
-      res.status(200).json({ products });
+      res.status(200).json({products});
     } else {
-      res.status(200).json({ products: [] });
+      res.status(200).json({products: []});
     }
   } catch (error) {
-    res.status(500).json({ error: error.message || "Error getting products." });
+    res.status(500).json({error: error.message || "Error getting products."});
   }
 };
 
 const getProductById = async (req, res) => {
   try {
-    let product = await Product.findOne({ _id: req.params.id }).lean().exec();
+    let product = await Product.findOne({_id: req.params.id}).lean().exec();
     let customerPrices = [];
     if (req.user.admin) {
-      customerPrices = await CustomerPrice.find({ product: product._id }).lean().exec();
+      customerPrices = await CustomerPrice.find({product: product._id}).lean().exec();
     } else {
       const customerProduct = await CustomerProduct.findOne({
         customerId: req.user._id,
@@ -118,15 +118,15 @@ const getProductById = async (req, res) => {
         }
       }
     }
-    res.status(200).json({ product, customerPrices });
+    res.status(200).json({product, customerPrices});
   } catch (error) {
-    res.status(500).json({ error: error.message || "Error getting product." });
+    res.status(500).json({error: error.message || "Error getting product."});
   }
 };
 
 const getCustomerPrices = async (req, res) => {
   try {
-    const customerProduct = await CustomerProduct.findOne({ customerId: req.body.userId })
+    const customerProduct = await CustomerProduct.findOne({customerId: req.body.userId})
       .populate("products.productId")
       .lean();
     if (customerProduct && customerProduct.products.length > 0) {
@@ -135,36 +135,36 @@ const getCustomerPrices = async (req, res) => {
         customerPrice: p.price,
         // Attach full product details
       }));
-      res.status(200).json({ products });
+      res.status(200).json({products});
     } else {
-      res.status(200).json({ products: [] });
+      res.status(200).json({products: []});
     }
   } catch (error) {
-    res.status(500).json({ error: error.message || "Error getting products." });
+    res.status(500).json({error: error.message || "Error getting products."});
   }
 };
 
 const updateCustomerPrice = async (req, res) => {
   try {
-    const { productId, customerId, price } = req.body;
+    const {productId, customerId, price} = req.body;
     const product = await Product.findById(productId).lean();
     if (!product) {
-      res.status(400).json({ error: "Invalid product" });
+      res.status(400).json({error: "Invalid product"});
     }
     const customer = await User.findById(customerId).lean();
     if (!customer) {
-      res.status(400).json({ error: "Invalid customer" });
+      res.status(400).json({error: "Invalid customer"});
     }
 
     const customerPrice = await CustomerProduct.findOneAndUpdate(
-      { customerId, "products.productId": productId },
-      { $set: { "products.$.price": price } }, // Updates price only for matching productId
-      { new: true }
+      {customerId, "products.productId": productId},
+      {$set: {"products.$.price": price}}, // Updates price only for matching productId
+      {new: true}
     ).lean();
 
-    res.status(200).json({ customerPrice });
+    res.status(200).json({customerPrice});
   } catch (error) {
-    res.status(500).json({ error: error.message || "Error updating price." });
+    res.status(500).json({error: error.message || "Error updating price."});
   }
 };
 
@@ -176,13 +176,13 @@ const bulkUpdatePrice = async (req, res) => {
     fs.createReadStream(filePath)
       .pipe(csvParser())
       .on("data", async (row) => {
-        const { partNo, newPrice, customerEmail, customerPrice, productName, description } = row;
+        const {partNo, newPrice, customerEmail, customerPrice, productName, description} = row;
         if (partNo && newPrice) {
-          updates.push({ partNo, newPrice: parseFloat(newPrice), productName, description });
+          updates.push({partNo, newPrice: parseFloat(newPrice), productName, description});
         }
         if (customerEmail && customerPrice && partNo) {
-          const user = await User.findOne({ email: customerEmail.toLowerCase() });
-          const product = await Product.findOne({ partNo });
+          const user = await User.findOne({email: customerEmail.toLowerCase()});
+          const product = await Product.findOne({partNo});
           if (user && product) {
             customerPriceUpdate.push({
               customer: user._id,
@@ -197,7 +197,7 @@ const bulkUpdatePrice = async (req, res) => {
           // Bulk update in the database
           for (const update of updates) {
             await Product.updateOne(
-              { partNo: update.partNo },
+              {partNo: update.partNo},
               {
                 $set: {
                   unitPrice: update.newPrice,
@@ -209,12 +209,12 @@ const bulkUpdatePrice = async (req, res) => {
           }
 
           for (const customerPrice of customerPriceUpdate) {
-            const { customer, product, price } = customerPrice;
+            const {customer, product, price} = customerPrice;
             console.log("🚀 ~ .on ~ customer, product, price:", customer, product, price);
             await CustomerPrice.updateOne(
-              { customer, product },
-              { $set: { price } },
-              { upsert: true }
+              {customer, product},
+              {$set: {price}},
+              {upsert: true}
             );
           }
 
@@ -226,12 +226,12 @@ const bulkUpdatePrice = async (req, res) => {
           });
         } catch (err) {
           console.log("🚀 ~ .on ~ err:", err);
-          res.status(500).json({ message: "Error updating prices", error: err });
+          res.status(500).json({message: "Error updating prices", error: err});
         }
       });
   } catch (error) {
     console.log("🚀 ~ bulkUpdatePrice ~ error:", error);
-    res.status(500).json({ message: "Error updating prices", error: error });
+    res.status(500).json({message: "Error updating prices", error: error});
   }
 };
 
@@ -255,7 +255,7 @@ const importCustomerProducts = async (req, res) => {
     console.log("CSV File Parsed:", records);
 
     for (const row of records) {
-      const { partNo, unitPrice, customerPrice, productName, description, unit } = row;
+      const {partNo, unitPrice, customerPrice, productName, description, unit} = row;
 
       if (!partNo || !productName || !unitPrice) {
         console.warn("Skipping invalid row:", row);
@@ -271,7 +271,7 @@ const importCustomerProducts = async (req, res) => {
       }
 
       // Check if product already exists, if not, insert it
-      let product = await Product.findOne({ partNo });
+      let product = await Product.findOne({partNo});
 
       if (!product) {
         const newProduct = new Product({
@@ -294,20 +294,20 @@ const importCustomerProducts = async (req, res) => {
       if (existingCustomerProduct) {
         // Update price if product already exists
         await CustomerProduct.updateOne(
-          { customerId, "products.productId": product._id },
-          { $set: { "products.$.price": customerProductPrice } } // Update only the price field
+          {customerId, "products.productId": product._id},
+          {$set: {"products.$.price": customerProductPrice}} // Update only the price field
         );
         console.log(`Updated price for customer ${customerId} on product ${productName}`);
       } else {
         // Add or update customer-specific product and price
         await CustomerProduct.findOneAndUpdate(
-          { customerId },
+          {customerId},
           {
             $addToSet: {
-              products: { productId: product._id, price: customerProductPrice },
+              products: {productId: product._id, price: customerProductPrice},
             },
           },
-          { new: true, upsert: true }
+          {new: true, upsert: true}
         );
         console.log(
           `Updated customer ${customerId} with product ${productName} at price ${productPrice}`
@@ -318,17 +318,17 @@ const importCustomerProducts = async (req, res) => {
     res.status(200).json("success");
   } catch (error) {
     console.error("Error processing CSV:", error);
-    res.status(500).json({ error });
+    res.status(500).json({error});
   }
 };
 
 const assignProductsToCustomers = async (req, res) => {
   try {
-    const { assignments } = req.body;
+    const {assignments} = req.body;
 
     // Validate input
     if (!assignments || !Array.isArray(assignments)) {
-      return res.status(400).json({ error: "Invalid assignments data" });
+      return res.status(400).json({error: "Invalid assignments data"});
     }
 
     // Get unique product and customer IDs
@@ -337,28 +337,27 @@ const assignProductsToCustomers = async (req, res) => {
 
     // Verify all products exist and are active
     const products = await Product.find({
-      _id: { $in: productIds },
-      active: true
+      _id: {$in: productIds}
     });
-    
+
     if (products.length !== productIds.length) {
-      return res.status(400).json({ error: "One or more products not found or inactive" });
+      return res.status(400).json({error: "One or more products not found"});
     }
 
     // Verify all customers exist and are not admins
     const customers = await User.find({
-      _id: { $in: customerIds },
+      _id: {$in: customerIds},
       admin: false
     });
-    
+
     if (customers.length !== customerIds.length) {
-      return res.status(400).json({ error: "One or more customers not found or are admins" });
+      return res.status(400).json({error: "One or more customers not found or are admins"});
     }
 
     // Create bulk operations for each assignment
     const bulkOps = assignments.map(assignment => ({
       updateOne: {
-        filter: { customerId: assignment.customerId },
+        filter: {customerId: assignment.customerId},
         update: {
           $addToSet: {
             products: {
@@ -374,10 +373,10 @@ const assignProductsToCustomers = async (req, res) => {
     // Execute bulk operations
     await CustomerProduct.bulkWrite(bulkOps);
 
-    res.status(200).json({ message: "Products assigned successfully" });
+    res.status(200).json({message: "Products assigned successfully"});
   } catch (error) {
     console.error("Error assigning products to customers:", error);
-    res.status(500).json({ error: "Failed to assign products to customers" });
+    res.status(500).json({error: "Failed to assign products to customers"});
   }
 };
 
