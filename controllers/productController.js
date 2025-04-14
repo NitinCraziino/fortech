@@ -399,19 +399,6 @@ const assignProductsToCustomers = async (req, res) => {
             }
           });
         }
-      } else {
-        // Create new customer-products entry if it doesn't exist
-        bulkOps.push({
-          insertOne: {
-            document: {
-              customerId: assignment.customerId,
-              products: [{
-                productId: assignment.productId,
-                price: assignment.price
-              }]
-            }
-          }
-        });
       }
     }
 
