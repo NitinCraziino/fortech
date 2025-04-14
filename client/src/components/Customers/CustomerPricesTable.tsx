@@ -1,4 +1,4 @@
-import { ColumnDef, ColumnFiltersState, flexRender, getCoreRowModel,getFilteredRowModel, getPaginationRowModel, getSortedRowModel, SortingState, useReactTable, VisibilityState } from "@tanstack/react-table";
+import { ColumnDef, ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, SortingState, useReactTable, VisibilityState } from "@tanstack/react-table";
 import {
   Table,
   TableBody,
@@ -17,6 +17,7 @@ type Product = {
   partNo: string;
   unitPrice: number;
   customerPrice: number;
+  image?: string;
 };
 
 const CustomerProductTable = ({
@@ -38,15 +39,16 @@ const CustomerProductTable = ({
   setSelectedProducts: (checked: boolean, product: Product) => void;
   selectedProducts: string[];
 }) => {
-    const [sorting, setSorting] = React.useState<SortingState>([]);
-    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-      []
-    );
-    const [columnVisibility, setColumnVisibility] =
-      React.useState<VisibilityState>({});
-    const [rowSelection, setRowSelection] = React.useState({});
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = React.useState({});
 
   const getCols = () => {
+
     const columns: ColumnDef<Product>[] = [
       {
         id: "select-col",
@@ -63,7 +65,18 @@ const CustomerProductTable = ({
       {
         accessorKey: "name",
         header: "Product Name",
-        cell: (info) => info.getValue(),
+        cell: ({ row }) => (
+          <div className="flex items-center gap-3 ms-2">
+            {row.original.image && row.original.image !== "" && (
+              <img
+                src={`https://www.naisorders.com${row.original.image}`}
+                alt="product"
+                className="rounded-full h-8 w-8"
+              />
+            )}
+            <span>{row.getValue("name")}</span>
+          </div>
+        ),
       },
       {
         accessorKey: "partNo",
@@ -88,7 +101,7 @@ const CustomerProductTable = ({
         enableHiding: false,
         cell: ({ row }) => {
           const product = row.original;
-  
+
           return (
             <>
               <div className="flex items-center justify-center gap-2">
@@ -140,42 +153,42 @@ const CustomerProductTable = ({
   });
 
   return (
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={getCols().length} className="h-24 text-center">
-                  No results.
+    <Table>
+      <TableHeader>
+        {table.getHeaderGroups().map((headerGroup) => (
+          <TableRow key={headerGroup.id}>
+            {headerGroup.headers.map((header) => {
+              return (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(header.column.columnDef.header, header.getContext())}
+                </TableHead>
+              );
+            })}
+          </TableRow>
+        ))}
+      </TableHeader>
+      <TableBody>
+        {table.getRowModel().rows?.length ? (
+          table.getRowModel().rows.map((row) => (
+            <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableRow>
+          ))
+        ) : (
+          <TableRow>
+            <TableCell colSpan={getCols().length} className="h-24 text-center">
+              No results.
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
   );
 };
 
