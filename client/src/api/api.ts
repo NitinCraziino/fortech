@@ -1,6 +1,6 @@
 import axios from "axios";
 //  const apiUrl = 'https://www.naisorders.com/api';
-const apiUrl = 'http://localhost:8000/api';
+const apiUrl = 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: apiUrl,
