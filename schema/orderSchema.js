@@ -34,11 +34,6 @@ const OrderSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    subtotal: {
-      type: Number,
-      required: true,
-      default: 0
-    },
     taxAmount: {
       type: Number,
       required: true,

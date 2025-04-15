@@ -65,8 +65,6 @@ const createOrder = async (req, res) => {
     const newOrder = new Order({
       userId,
       products: processedProducts,
-      subtotal: Number(subtotal.toFixed(2)),
-      taxAmount: Number(totalTaxAmount.toFixed(2)),
       totalPrice,
       pickupLocation,
       poNumber,
