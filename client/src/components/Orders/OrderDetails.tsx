@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch } from "@/store";
+import type { AppDispatch } from "@/store";
 import { getOrderById } from "@/redux/slices/orderSlice";
 import { formatDate } from "@/lib/utils";
 import { Spinner } from "../ui/spinner";
@@ -21,6 +21,7 @@ interface Product {
   };
   quantity: number;
   comments: string;
+  taxEnabled: boolean;
   deliveryDate: Date | null;
   pickupLocation: string;
   poNumber: string;
@@ -42,7 +43,7 @@ interface Order {
   totalPrice: number;
   subtotal: number;
   taxAmount: number;
-  taxApplied: boolean;
+  taxEnabled: boolean;
 }
 
 export default function OrderDetails() {
@@ -66,20 +67,16 @@ export default function OrderDetails() {
       dispatch(getOrderById({ _id: id as string }));
     } else {
       // Handle the case where id is undefined
-      navigate('/orders');
+      navigate("/orders");
     }
   }, [id, dispatch, navigate]);
+
   return (
     <div className="p-6 mx-auto">
       <Spinner show={loading} fullScreen />
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <Button
-          onClick={() => navigate("/orders")}
-          variant="outline"
-          size="icon"
-          className="h-8 w-8"
-        >
+        <Button onClick={() => navigate("/orders")} variant="outline" size="icon" className="h-8 w-8">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-2xl font-medium">Order Details</h1>
@@ -96,9 +93,7 @@ export default function OrderDetails() {
               </div>
               <div className="space-y-1 text-left">
                 <p className="text-xl font-medium">Order ID: {order?.orderNo}</p>
-                <p className="text-sm font-normal text-muted-foreground">
-                  {formatDate(order?.createdAt!)}
-                </p>
+                <p className="text-sm font-normal text-muted-foreground">{formatDate(order?.createdAt!)}</p>
               </div>
             </div>
 
@@ -111,12 +106,11 @@ export default function OrderDetails() {
               <p className="text-lg font-medium">
                 Delivery Date:{" "}
                 <span className="text-muted-foreground">
-                  {order?.deliveryDate ? formatDate(order?.deliveryDate) : "N/A"}
+                  {order?.deliveryDate ? formatDate(order.deliveryDate) : "N/A"}
                 </span>
               </p>
               <p className="text-lg font-medium">
-                Shipping Address:{" "}
-                <span className="text-muted-foreground">{order?.pickupLocation}</span>
+                Shipping Address: <span className="text-muted-foreground">{order?.pickupLocation}</span>
               </p>
               <p className="text-lg font-medium">
                 Comments: <span className="text-muted-foreground">{order?.comments || "N/A"}</span>
@@ -145,11 +139,19 @@ export default function OrderDetails() {
                       <th className="p-4 text-left">Description</th>
                       <th className="p-4 text-left">Price</th>
                       <th className="p-4 text-left">Quantity</th>
+                      <th className="p-4 text-left">Tax Applied</th>
+                      <th className="p-4 text-left">Tax Amount</th>
                       <th className="p-4 text-left">Amount</th>
                     </tr>
                   </thead>
-                  <tbody className="">
+                  <tbody>
                     {order?.products.map((product: Product, index: number) => {
+                      // Calculate tax amount for this product
+                      const subtotal = product.price * product.quantity;
+                      const taxRate = order?.taxAmount / order?.subtotal;
+                      const taxAmount = product.taxEnabled ? subtotal * taxRate : 0;
+                      const total = subtotal + taxAmount;
+
                       return (
                         <tr key={index} className="border-b border-gray-100">
                           <td className="p-4 flex gap-2 items-center">
@@ -165,7 +167,9 @@ export default function OrderDetails() {
                           <td className="p-4">{product.productId.description}</td>
                           <td className="p-4">$ {product.price}</td>
                           <td className="p-4 ">{product.quantity}</td>
-                          <td className="p-4 ">{product.price * product.quantity}</td>
+                          <td className="p-4">{product.taxEnabled ? "6%" : "0%"}</td>
+                          <td className="p-4">${taxAmount.toFixed(2)}</td>
+                          <td className="p-4">${total.toFixed(2)}</td>
                         </tr>
                       );
                     })}
@@ -173,44 +177,23 @@ export default function OrderDetails() {
 
                   <tfoot>
                     <tr>
-                      <td colSpan={6} height={20} className="bg-gray-100 "></td>
+                      <td colSpan={7} height={20} className="bg-gray-100 "></td>
                     </tr>
                     <tr>
-                      <td colSpan={2}></td>
-                      <td colSpan={2} className="p-4 text-right font-medium">
+                      <td colSpan={3}></td>
+                      <td colSpan={2} className="p-2 text-right font-medium">
                         Total Items:
                       </td>
-                      <td className="p-4">
-                        {order?.products.reduce((sum: number, accu: Product) => {
-                          const quantity = accu.quantity;
-                          return sum + quantity;
-                        }, 0)}
+                      <td className="p-2">
+                        {order?.products.reduce((sum: number, product: Product) => sum + product.quantity, 0)}
                       </td>
                     </tr>
-                    {order?.taxApplied && (
-                      <>
-                        <tr>
-                          <td colSpan={2}></td>
-                          <td colSpan={2} className="p-4 text-right font-medium">
-                            Subtotal:
-                          </td>
-                          <td className="p-4">$ {order?.subtotal.toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                          <td colSpan={2}></td>
-                          <td colSpan={2} className="p-4 text-right font-medium">
-                            Tax:
-                          </td>
-                          <td className="p-4">$ {order?.taxAmount.toFixed(2)}</td>
-                        </tr>
-                      </>
-                    )}
                     <tr>
-                      <td colSpan={2}></td>
-                      <td colSpan={2} className="p-4 text-right font-medium">
+                      <td colSpan={3}></td>
+                      <td colSpan={2} className="p-2 text-right font-medium">
                         Total:
                       </td>
-                      <td className="p-4">$ {order?.totalPrice.toFixed(2)}</td>
+                      <td className="p-4">${order?.totalPrice.toFixed(2)}</td>
                     </tr>
                   </tfoot>
                 </table>

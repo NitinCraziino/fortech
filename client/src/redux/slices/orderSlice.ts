@@ -38,7 +38,6 @@ export const createOrderAsync = createAsyncThunk(
       poNumber,
       comments,
       deliveryDate,
-      taxApplied,
     }: {
       products: OrderProduct[];
       userId: string;
@@ -47,14 +46,13 @@ export const createOrderAsync = createAsyncThunk(
       poNumber: string;
       comments: string;
       deliveryDate: Date;
-      taxApplied: boolean;
     },
     { rejectWithValue }
   ) => {
     try {
       const response = await postApi(
         CREATEORDER,
-        { products, userId, pickupLocation, totalPrice, poNumber, comments, deliveryDate, taxApplied },
+        { products, userId, pickupLocation, totalPrice, poNumber, comments, deliveryDate },
         {},
         false
       );

@@ -1,5 +1,5 @@
 const Order = require("../schema/orderSchema");
-const Product = require("../schema/productSchema");
+const CustomerProduct = require("../schema/customerProductSchema")
 const User = require("../schema/userSchema");
 const EmailTemplate = require("../schema/emailtemplateSchema");
 const {sendEmail} = require("./emailController");
@@ -7,42 +7,66 @@ const {createObjectCsvWriter} = require("csv-writer");
 
 const createOrder = async (req, res) => {
   try {
-    const {products, userId, pickupLocation, poNumber, comments, deliveryDate, taxApplied} = req.body;
+    const {products, userId, pickupLocation, poNumber, comments, deliveryDate} = req.body;
     const user = await User.findById(userId);
     if (!user) {
       return res.status(400).json({error: "User not found."});
     }
 
-    let subtotal = 0;
-    let productDetails = [];
-
-    productDetails = await Promise.all(
-      products.map(async (product) => {
-        const {productId, quantity, price} = product;
-        const productData = await Product.findById(product.productId);
-        if (productData && productData.active) {
-          subtotal += price * quantity;
-          return {productId, quantity, price};
-        } else {
-          return false;
-        }
-      })
-    );
-
-    // Filter out invalid products
-    productDetails = productDetails.filter((x) => x);
-
-    // Apply tax if needed
     const TAX_RATE = 0.06; // 6% tax rate
-    const taxAmount = taxApplied ? parseFloat((subtotal * TAX_RATE).toFixed(2)) : 0;
-    const totalPrice = parseFloat((subtotal + taxAmount).toFixed(2));
+
+    const customerProducts = await CustomerProduct.findOne({customerId: userId});
+    if (!customerProducts) {
+      return res.status(400).json({error: "Customer products not found."});
+    }
+
+    let subtotal = 0;
+    let totalTaxAmount = 0;
+    let processedProducts = [];
+
+    for (const product of products) {
+      const {productId, quantity} = product;
+
+      const customerProduct = customerProducts.products.find(
+        p => p.productId.toString() === productId
+      );
+
+      if (!customerProduct) {
+        return res.status(400).json({
+          error: `Product with ID ${productId} not found in customer's product list.`
+        });
+      }
+
+      // Use server-verified price from the database
+      const verifiedPrice = customerProduct.price;
+      const taxEnabled = customerProduct.taxEnabled;
+
+      // Calculate amounts on server side
+      const productAmount = verifiedPrice * quantity;
+      const productTaxAmount = taxEnabled ? Number((productAmount * TAX_RATE).toFixed(2)) : 0;
+
+      subtotal += productAmount;
+      totalTaxAmount += productTaxAmount;
+
+      // Add product to processed list
+      processedProducts.push({
+        productId,
+        quantity,
+        price: verifiedPrice,
+        taxEnabled: taxEnabled,
+        amount: productAmount,
+        taxAmount: productTaxAmount
+      });
+    }
+
+    // Calculate final total
+    const totalPrice = Number((subtotal + totalTaxAmount).toFixed(2));
 
     const newOrder = new Order({
       userId,
-      products: productDetails,
-      subtotal,
-      taxAmount,
-      taxApplied,
+      products: processedProducts,
+      subtotal: Number(subtotal.toFixed(2)),
+      taxAmount: Number(totalTaxAmount.toFixed(2)),
       totalPrice,
       pickupLocation,
       poNumber,
@@ -51,36 +75,39 @@ const createOrder = async (req, res) => {
     });
 
     const savedOrder = await newOrder.save();
-    const emailTemplate = await EmailTemplate.findOne({type: "ORDER CONFIRMATION"}).lean().exec();
+    const emailTemplate = await EmailTemplate.findOne({type: "ORDER_CONFIRMATION"}).lean().exec();
 
-    sendEmail({
-      to: user.email,
-      from: "brian@naisupply.com",
-      subject: emailTemplate.subject,
-      html: emailTemplate.body
-        .replace("[username]", user.name)
-        .replace("[order id]", savedOrder.orderNo)
-        .replace("[amount]", savedOrder.totalPrice)
-        .replace("[order date & time]", savedOrder.createdAt)
-        .replace("[vieworderlink]", `https://www.naisorders.com/view-order/${savedOrder._id}`),
-    });
+    if (emailTemplate) {
+      sendEmail({
+        to: user.email,
+        from: "brian@naisupply.com",
+        subject: emailTemplate.subject,
+        html: emailTemplate.body
+          .replace("[username]", user.name)
+          .replace("[order id]", savedOrder.orderNo)
+          .replace("[amount]", savedOrder.totalPrice.toFixed(2))
+          .replace("[order date & time]", savedOrder.createdAt.toLocaleString())
+          .replace("[vieworderlink]", `https://www.naisorders.com/view-order/${savedOrder._id}`),
+      });
+    }
 
-    const template = await EmailTemplate.findOne({type: "NEW ORDER"}).lean().exec();
-
+    const template = await EmailTemplate.findOne({type: "NEW_ORDER"}).lean().exec();
     const admin = await User.findOne({admin: true}).lean().exec();
 
-    sendEmail({
-      to: admin.email,
-      from: "brian@naisupply.com",
-      subject: template.subject,
-      html: template.body
-        .replace("[username]", admin.name)
-        .replace("[customer name]", user.name)
-        .replace("[order id]", savedOrder.orderNo)
-        .replace("[amount]", savedOrder.totalPrice)
-        .replace("[order date & time]", savedOrder.createdAt)
-        .replace("[vieworderlink]", `https://www.naisorders.com/view-order/${savedOrder._id}`),
-    });
+    if (template && admin) {
+      sendEmail({
+        to: admin.email,
+        from: "brian@naisupply.com",
+        subject: template.subject,
+        html: template.body
+          .replace("[username]", admin.name)
+          .replace("[customer name]", user.name)
+          .replace("[order id]", savedOrder.orderNo)
+          .replace("[amount]", savedOrder.totalPrice.toFixed(2))
+          .replace("[order date & time]", savedOrder.createdAt.toLocaleString())
+          .replace("[vieworderlink]", `https://www.naisorders.com/view-order/${savedOrder._id}`),
+      });
+    }
 
     res.status(200).json({order: savedOrder});
   } catch (error) {

@@ -1,19 +1,15 @@
 "use client";
 
+import type React from "react";
+
 import { useEffect, useState } from "react";
 import { ArrowLeft, CalendarIcon, SquarePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch } from "@/store";
+import type { AppDispatch } from "@/store";
 import { getCustomerProductsAsync } from "@/redux/slices/productSlice";
 import { createOrderAsync } from "@/redux/slices/orderSlice";
 import { useNavigate } from "react-router-dom";
@@ -24,15 +20,16 @@ import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Spinner } from "../ui/spinner";
-
-// Define tax rate constant - can be moved to a config file later
-const TAX_RATE = 0.06; // 6% tax rate
+import { TAX_RATE } from "@/constants";
 
 interface ProductRow {
   productId: string;
   price: number;
   quantity: number;
-  amount: number;
+  amount: number;  // This is the base amount (price * quantity)
+  taxEnabled: boolean;
+  taxAmount: number;
+  totalAmount: number;  // This is amount + taxAmount
 }
 
 interface Product {
@@ -44,6 +41,7 @@ interface Product {
   active: boolean;
   image: string;
   customerPrice: number;
+  taxEnabled: boolean;
 }
 
 interface ProductError {
@@ -52,8 +50,8 @@ interface ProductError {
 }
 
 interface OrderDetailError {
-  poNumber: string | null; // Error message for Product ID
-  pickupLocation: string | null; // Error message for Quantity
+  poNumber: string | null; // Error message for PO Number
+  pickupLocation: string | null; // Error message for Pickup Location
 }
 
 interface OrderDetails {
@@ -68,28 +66,22 @@ const INITIAL_ROW: ProductRow = {
   price: 0,
   quantity: 1,
   amount: 0,
+  taxEnabled: false,
+  taxAmount: 0,
+  totalAmount: 0
 };
 
 export default function CreateOrder() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  useEffect(() => {
-    dispatch(getCustomerProductsAsync({}));
-  }, []);
   const { success, errorToast } = useToastActions();
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error, loading } = useSelector((state: any) => state.order);
-  useEffect(() => {
-    if (error) {
-      errorToast(error);
-    }
-  }, [error]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { products, orderProducts } = useSelector((state: any) => state.product);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { user } = useSelector((state: any) => state.auth);
-  // Extract taxEnabled from customer object
-  const taxEnabled = user?.taxEnabled || false;
 
   const [orderFormData, setOrderFormData] = useState<OrderDetails>({
     poNumber: "",
@@ -105,25 +97,30 @@ export default function CreateOrder() {
     pickupLocation: null,
   });
 
-  const [subTotal, setSubTotal] = useState<number>(0);
-  const [taxTotal, setTaxTotal] = useState<number>(0);
   const [totalPrice, setTotalPrice] = useState<number>(0);
 
+  useEffect(() => {
+    dispatch(getCustomerProductsAsync({}));
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (error) {
+      errorToast(error);
+    }
+  }, [error, errorToast]);
+
   const calculateTotal = (rowsData: ProductRow[]) => {
-    // Calculate subtotal from all rows
-    const sub = rowsData.reduce((sum, row) => {
-      return sum + row.amount;
+    // Calculate total price from all rows' totalAmount
+    const total = rowsData.reduce((sum, row) => {
+      return sum + row.totalAmount;
     }, 0);
 
-    // Calculate tax on the subtotal if tax is enabled
-    const tax = taxEnabled ? Number((sub * TAX_RATE).toFixed(2)) : 0;
-
-    // Calculate total price (subtotal + tax)
-    const total = sub + tax;
-
-    setSubTotal(sub);
-    setTaxTotal(tax);
     setTotalPrice(total);
+  };
+
+  const getTaxedAmount = (taxEnabled: boolean, productAmount: number) => {
+    if (!taxEnabled) return 0;
+    return Number((productAmount * TAX_RATE).toFixed(2));
   };
 
   // Update amount only calculates price * quantity without tax
@@ -137,24 +134,35 @@ export default function CreateOrder() {
   useEffect(() => {
     if (orderProducts.length) {
       const rowData: ProductRow[] = orderProducts.map((product: Product) => {
+        const amount = updateAmount(product.customerPrice, 1);
+        const taxAmount = product.taxEnabled ? getTaxedAmount(product.taxEnabled, amount) : 0;
+
         return {
           price: product.customerPrice,
           quantity: 1,
           productId: product._id,
-          amount: updateAmount(product.customerPrice, 1),
+          amount: amount,
+          taxEnabled: product.taxEnabled,
+          taxAmount: taxAmount,
+          totalAmount: amount + taxAmount
         };
       });
       setRows(rowData);
       calculateTotal(rowData);
     }
-  }, [orderProducts, taxEnabled, user]);
+  }, [orderProducts]);
 
   const handleAddRow = () => {
     setRows([...rows, { ...INITIAL_ROW }]);
+    setErrors([...errors, { idError: null, quantityError: null }]);
   };
 
   const handleRemoveRow = (index: number) => {
-    setRows(rows.filter((_, i) => i !== index));
+    const updatedRows = rows.filter((_, i) => i !== index);
+    const updatedErrors = errors.filter((_, i) => i !== index);
+    setRows(updatedRows);
+    setErrors(updatedErrors);
+    calculateTotal(updatedRows);
   };
 
   const handleProductChange = (productId: string, index: number) => {
@@ -162,26 +170,44 @@ export default function CreateOrder() {
     const productData = products.find((x: any) => x._id === productId);
     if (productData) {
       const price = productData.customerPrice;
+      const taxEnabled = productData.taxEnabled;
       const rowsData: ProductRow[] = JSON.parse(JSON.stringify(rows));
-      rowsData[index]["price"] = price;
-      rowsData[index]["productId"] = productId;
-      rowsData[index]["amount"] = updateAmount(price, rowsData[index].quantity);
+      const amount = updateAmount(price, rowsData[index].quantity);
+      const taxAmount = getTaxedAmount(taxEnabled, amount);
+
+      rowsData[index] = {
+        ...rowsData[index],
+        price: price,
+        productId: productId,
+        amount: amount,
+        taxEnabled: taxEnabled,
+        taxAmount: taxAmount,
+        totalAmount: amount + taxAmount
+      };
+
       setRows(rowsData);
       calculateTotal(rowsData);
     }
-    setErrors((prevErrors) =>
-      prevErrors.map((error, i) => (i === index ? { ...error, [`idError`]: null } : error))
-    );
+    setErrors((prevErrors) => prevErrors.map((error, i) => (i === index ? { ...error, idError: null } : error)));
   };
 
   const handleQuantityChange = (index: number, value: number) => {
     const rowsData: ProductRow[] = JSON.parse(JSON.stringify(rows));
-    rowsData[index]["quantity"] = value;
-    rowsData[index]["amount"] = updateAmount(rowsData[index].price, value);
+    const amount = updateAmount(rowsData[index].price, value);
+    const taxAmount = getTaxedAmount(rowsData[index].taxEnabled, amount);
+
+    rowsData[index] = {
+      ...rowsData[index],
+      quantity: value,
+      amount: amount,
+      taxAmount: taxAmount,
+      totalAmount: amount + taxAmount
+    };
+
     setRows(rowsData);
     calculateTotal(rowsData);
     setErrors((prevErrors) =>
-      prevErrors.map((error, i) => (i === index ? { ...error, [`quantityError`]: null } : error))
+      prevErrors.map((error, i) => (i === index ? { ...error, quantityError: null } : error)),
     );
   };
 
@@ -198,7 +224,7 @@ export default function CreateOrder() {
   };
 
   const validateField = (fieldName: string) => {
-    let error = "";
+    let error = null;
     if (fieldName === "pickupLocation") {
       if (!orderFormData.pickupLocation.trim()) {
         error = "Shipping address is required.";
@@ -221,11 +247,7 @@ export default function CreateOrder() {
 
     fieldNames.forEach((field) => {
       validateField(field);
-      if (errors[field as keyof typeof errors]) {
-        isValid = false;
-      }
       if (orderError[field as keyof typeof orderError]) {
-        console.log("Order error", orderError[field as keyof typeof orderError]);
         isValid = false;
       }
     });
@@ -235,9 +257,9 @@ export default function CreateOrder() {
 
   const handleSubmit = async () => {
     if (!validateForm() || !validateProducts()) {
-      console.log("Validation failed.");
       return;
     }
+
     try {
       await dispatch(
         createOrderAsync({
@@ -248,12 +270,11 @@ export default function CreateOrder() {
           poNumber: orderFormData.poNumber,
           comments: orderFormData.comments,
           deliveryDate: orderFormData.deliveryDate,
-          taxApplied: taxEnabled,
-        })
+        }),
       ).unwrap();
       success("Order placed.");
       navigate("/orders");
-    } catch {
+    } catch (error) {
       errorToast("Error placing order");
     }
   };
@@ -274,17 +295,18 @@ export default function CreateOrder() {
         <Button onClick={() => navigate("/orders")} variant="outline" size="icon" className="h-8 w-8">
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        {/* <h1 className="text-2xl font-medium">Create Order</h1> */}
       </div>
 
       <div className="max-w-[900px] w-full mb-6">
         <h1 className="text-2xl font-medium">Product Details</h1>
         <Card className="flex flex-col gap-4 mb-6 bg-[#F2F2F2] border-none shadow-none p-4">
           <div className="p-4 bg-white rounded-lg border border-input">
-            <div className="grid grid-cols-[minmax(200px,2fr),120px,minmax(200px,2fr),120px,80px] gap-4 mb-2 relative">
+            <div className="grid grid-cols-[minmax(180px,250px),80px,80px,70px,90px,90px,90px] gap-3 mb-2 relative">
               <div className="text-sm font-medium">Product</div>
               <div className="text-sm font-medium">Price</div>
               <div className="text-sm font-medium">Quantity</div>
+              <div className="text-sm font-medium">Tax applied</div>
+              <div className="text-sm font-medium">Tax Amount</div>
               <div className="text-sm font-medium">Amount</div>
               <div className="text-sm font-medium text-center">Action</div>
             </div>
@@ -293,7 +315,7 @@ export default function CreateOrder() {
               {rows.map((row, index) => (
                 <div
                   key={index}
-                  className="grid grid-cols-[minmax(200px,2fr),120px,minmax(200px,2fr),120px,80px] gap-4 relative"
+                  className="grid grid-cols-[minmax(180px,250px),80px,80px,70px,90px,90px,90px] gap-3 relative items-center"
                 >
                   <div className="flex flex-col gap-1">
                     <Select
@@ -306,13 +328,11 @@ export default function CreateOrder() {
                         <SelectValue placeholder="Select Product" />
                       </SelectTrigger>
                       <SelectContent>
-                        {products.map((product: { _id: string; partNo: string; description: string; }) => {
-                          return (
-                            <SelectItem key={product._id} value={product._id}>
-                              {product.partNo} ({product.description})
-                            </SelectItem>
-                          );
-                        })}
+                        {products.map((product: { _id: string; partNo: string; description: string; }) => (
+                          <SelectItem key={product._id} value={product._id}>
+                            {product.partNo} ({product.description})
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     {errors[index]?.idError && (
@@ -320,21 +340,26 @@ export default function CreateOrder() {
                     )}
                   </div>
 
-                  <Input readOnly className="w-full" value={row.price} placeholder="Enter price" />
+                  <Input readOnly className="w-full" value={`$${row.price.toFixed(2)}`} placeholder="Enter price" />
 
-                  <Input
-                    min={1}
-                    onChange={(e) => handleQuantityChange(index, Number(e.target.value))}
-                    value={row.quantity}
-                    className="w-full"
-                    type="number"
-                    step={1}
-                    placeholder="Enter Quantity"
-                  />
-                  {errors[index]?.quantityError && (
-                    <span className="text-xs text-destructive">{errors[index].quantityError}</span>
-                  )}
-                  <Input className="w-full" value={row.amount} readOnly />
+                  <div className="flex flex-col gap-1">
+                    <Input
+                      min={1}
+                      onChange={(e) => handleQuantityChange(index, Number(e.target.value))}
+                      value={row.quantity}
+                      className="w-full"
+                      type="number"
+                      step={1}
+                      placeholder="Enter Quantity"
+                    />
+                    {errors[index]?.quantityError && (
+                      <span className="text-xs text-destructive">{errors[index].quantityError}</span>
+                    )}
+                  </div>
+
+                  <span>{row.taxEnabled ? "6%" : "0"}</span>
+                  <span>{row.taxEnabled ? `$${row.taxAmount.toFixed(2)}` : "$0.00"}</span>
+                  <Input className="w-full" value={`$${row.totalAmount.toFixed(2)}`} readOnly />
 
                   <Button
                     variant="ghost"
@@ -343,7 +368,6 @@ export default function CreateOrder() {
                     disabled={rows.length === 1}
                     className="mx-auto"
                   >
-                    {/* <Trash2 className="h-6 w-6" /> */}
                     <img src="icons/delete.svg" alt="delete" />
                   </Button>
                 </div>
@@ -357,31 +381,11 @@ export default function CreateOrder() {
           </div>
 
           <div className="flex flex-col items-end bg-white rounded-lg border border-input w-fit ms-auto">
-            <div className="flex items-center">
-              <span className="flex items-center justify-center text-sm font-medium py-3 px-6 min-w-[130px]">
-                $ {subTotal.toFixed(2)}
-              </span>
-              <span className="flex items-center justify-center text-sm font-medium py-3 px-6 min-w-[130px]">
-                Subtotal
-              </span>
-            </div>
-            {taxEnabled && (
-              <div className="flex items-center border-t border-input">
-                <span className="flex items-center justify-center text-sm font-medium py-3 px-6 min-w-[130px]">
-                  $ {taxTotal.toFixed(2)}
-                </span>
-                <span className="flex items-center justify-center text-sm font-medium py-3 px-6 min-w-[130px]">
-                  Tax ({(TAX_RATE * 100).toFixed(0)}%)
-                </span>
-              </div>
-            )}
             <div className="flex items-center border-t border-input font-semibold">
               <span className="flex items-center justify-center text-sm py-3 px-6 min-w-[130px]">
                 $ {totalPrice.toFixed(2)}
               </span>
-              <span className="flex items-center justify-center text-sm py-3 px-6 min-w-[130px]">
-                Total
-              </span>
+              <span className="flex items-center justify-center text-sm py-3 px-6 min-w-[130px]">Total</span>
             </div>
           </div>
         </Card>
@@ -409,9 +413,7 @@ export default function CreateOrder() {
                     className="w-full"
                     placeholder="Enter PO #"
                   />
-                  {orderError.poNumber && (
-                    <span className="text-xs text-destructive">{orderError.poNumber}</span>
-                  )}
+                  {orderError.poNumber && <span className="text-xs text-destructive">{orderError.poNumber}</span>}
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -421,7 +423,7 @@ export default function CreateOrder() {
                         variant={"outline"}
                         className={cn(
                           "justify-start text-left font-normal",
-                          !orderFormData.deliveryDate && "text-muted-foreground"
+                          !orderFormData.deliveryDate && "text-muted-foreground",
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -434,7 +436,6 @@ export default function CreateOrder() {
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
-                        required={true}
                         mode="single"
                         selected={orderFormData.deliveryDate}
                         onSelect={(date) => {
