@@ -210,12 +210,14 @@ const Products: React.FC = () => {
           }}
         />
       </div>
-      <BulkAssignModal
-        open={isAssignModalOpen}
-        onOpenChange={setIsAssignModalOpen}
-        setSelectedProducts={setSelectedProducts}
-        selectedProducts={selectedProducts}
-      />
+      {isAssignModalOpen && (
+        <BulkAssignModal
+          open={isAssignModalOpen}
+          onOpenChange={setIsAssignModalOpen}
+          setSelectedProducts={setSelectedProducts}
+          selectedProducts={selectedProducts}
+        />
+      )}
     </div>
   );
 };

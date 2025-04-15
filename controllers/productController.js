@@ -376,13 +376,16 @@ const assignProductsToCustomers = async (req, res) => {
         customerId: assignment.customerId
       });
 
+      // Ensure taxEnabled is properly set - default to product's taxEnabled setting if not specified
+      const taxEnabled = typeof assignment.taxEnabled === "boolean" ? assignment.taxEnabled : true;
+
       if (customerProductsDoc) {
         const existingProductIndex = customerProductsDoc.products.findIndex(
           p => p.productId.toString() === assignment.productId
         );
 
         if (existingProductIndex >= 0) {
-          // Update the price of existing product assignment
+          // Update the price and taxEnabled status of existing product assignment
           bulkOps.push({
             updateOne: {
               filter: {
@@ -392,7 +395,7 @@ const assignProductsToCustomers = async (req, res) => {
               update: {
                 $set: {
                   "products.$.price": assignment.price,
-                  "products.$.taxEnabled": typeof assignment.taxEnabled === "boolean" ? assignment.taxEnabled : true
+                  "products.$.taxEnabled": taxEnabled
                 }
               }
             }
@@ -406,7 +409,8 @@ const assignProductsToCustomers = async (req, res) => {
                 $push: {
                   products: {
                     productId: assignment.productId,
-                    price: assignment.price
+                    price: assignment.price,
+                    taxEnabled: taxEnabled  // Added taxEnabled property
                   }
                 }
               }

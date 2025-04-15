@@ -5,6 +5,8 @@ const EmailTemplate = require("../schema/emailtemplateSchema");
 const {sendEmail} = require("./emailController");
 const {createObjectCsvWriter} = require("csv-writer");
 
+const TAX_RATE = 0.06; // 6% tax rate
+
 const createOrder = async (req, res) => {
   try {
     const {products, userId, pickupLocation, poNumber, comments, deliveryDate} = req.body;
@@ -12,8 +14,6 @@ const createOrder = async (req, res) => {
     if (!user) {
       return res.status(400).json({error: "User not found."});
     }
-
-    const TAX_RATE = 0.06; // 6% tax rate
 
     const customerProducts = await CustomerProduct.findOne({customerId: userId});
     if (!customerProducts) {
