@@ -71,7 +71,6 @@ const editProduct = async (req, res) => {
 const getAllProducts = async (req, res) => {
   try {
     const products = await Product.find().sort({createdAt: -1}).lean().exec();
-
     products.forEach(product => {
       product.taxEnabled = typeof product.taxEnabled === "boolean" ? product.taxEnabled : true;
     });
@@ -91,8 +90,10 @@ const getCustomerProducts = async (req, res) => {
       const products = customerProduct.products.map((p) => ({
         ...p.productId,
         customerPrice: p.price,
+        taxEnabled: p.taxEnabled
         // Attach full product details
       }));
+
       res.status(200).json({products});
     } else {
       res.status(200).json({products: []});
@@ -136,11 +137,12 @@ const getCustomerPrices = async (req, res) => {
     const customerProduct = await CustomerProduct.findOne({customerId: req.body.userId})
       .populate("products.productId")
       .lean();
+
     if (customerProduct && customerProduct.products.length > 0) {
       const products = customerProduct.products.map((p) => ({
         ...p.productId,
         customerPrice: p.price,
-        taxEnabled: p.taxEnabled
+        taxEnabled: typeof p.taxEnabled === 'boolean' ? p.taxEnabled : true
         // Attach full product details
       }));
       res.status(200).json({products});
@@ -389,7 +391,8 @@ const assignProductsToCustomers = async (req, res) => {
               },
               update: {
                 $set: {
-                  "products.$.price": assignment.price
+                  "products.$.price": assignment.price,
+                  "products.$.taxEnabled": typeof assignment.taxEnabled === "boolean" ? assignment.taxEnabled : true
                 }
               }
             }
@@ -428,7 +431,6 @@ const assignProductsToCustomers = async (req, res) => {
 
 const toggleProductTaxStatus = async (req, res) => {
   try {
-    console.log("🚀 ~ toggleProductTaxStatus ~ req.body:", req.body);
     const {productId, taxEnabled} = req.body;
 
     const updatedProduct = await Product.findByIdAndUpdate(

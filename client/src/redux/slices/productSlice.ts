@@ -13,6 +13,7 @@ import {
   IMPORTCUSTOMERPRODUCTS,
   ASSIGNPRODUCTSTOCUSTOMERS,
   TOGGLEPRODUCTTAXSTATUS,
+  TOGGLECUSTOMERPRODUCTTAXSTATUS,
 } from "@/api/apiConstants";
 import { BulkAssignPayload } from "@/types/product";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
@@ -149,6 +150,32 @@ export const getCustomerPricesAsync = createAsyncThunk(
   }
 );
 
+export const toggleCustomerProductTaxStatus = createAsyncThunk(
+  "user/toggleTaxStatus",
+  async ({ productId, taxEnabled, customerId }: { productId: string; taxEnabled: boolean; customerId: string; }, { rejectWithValue }) => {
+    try {
+      const response = await putApi(TOGGLECUSTOMERPRODUCTTAXSTATUS, { productId, taxEnabled, customerId }, {}, false);
+      return response;
+    } catch (error: any) {
+      const message = error?.response?.data.message; // Return error in case of failure
+      return rejectWithValue(message ? message : "Invite failed. Please try again.");
+    }
+  }
+);
+
+export const toggleProductTaxStatus = createAsyncThunk(
+  "product/toggleTaxStatus",
+  async ({ productId, taxEnabled }: { productId: string; taxEnabled: boolean; }, { rejectWithValue }) => {
+    try {
+      const response = await putApi(TOGGLEPRODUCTTAXSTATUS, { productId, taxEnabled }, {}, false);
+      return response;
+    } catch (error: any) {
+      const message = error?.response?.data.message; // Return error in case of failure
+      return rejectWithValue(message ? message : "Invite failed. Please try again.");
+    }
+  }
+);
+
 export const getProductById = createAsyncThunk(
   "product/getById",
   async ({ _id }: { _id: string; }, { rejectWithValue }) => {
@@ -238,21 +265,6 @@ export const bulkPriceUpdate = createAsyncThunk(
     }
   }
 );
-
-export const toggleProductTaxStatus = createAsyncThunk(
-  "product/toggleTaxStatus",
-  async ({ productId, taxEnabled }: { productId: string; taxEnabled: boolean; }, { rejectWithValue }) => {
-    try {
-      const response = await putApi(TOGGLEPRODUCTTAXSTATUS, { productId, taxEnabled }, {}, false);
-      return response;
-    } catch (error: any) {
-      const message = error?.response?.data.message; // Return error in case of failure
-      return rejectWithValue(message ? message : "Invite failed. Please try again.");
-    }
-  }
-);
-
-
 
 export const importCustomerProducts = createAsyncThunk(
   "product/importCustomerProducts",
@@ -409,6 +421,32 @@ const productSlice = createSlice({
       .addCase(getCustomerProductsAsync.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      });
+
+    builder
+      .addCase(toggleProductTaxStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(toggleProductTaxStatus.fulfilled, (state, action) => {
+        state.loading = false;
+      })
+      .addCase(toggleProductTaxStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    builder
+      .addCase(toggleCustomerProductTaxStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(toggleCustomerProductTaxStatus.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(toggleCustomerProductTaxStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message as string;
       });
 
     builder

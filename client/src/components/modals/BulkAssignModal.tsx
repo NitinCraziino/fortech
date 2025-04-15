@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Dispatch, SetStateAction } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,24 +14,29 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { getCustomersAsync } from "@/redux/slices/customerSlice";
 import { assignProductsToCustomersAsync } from "@/redux/slices/productSlice";
-import { Product, Customer, CustomerProductPrice } from "../../types/product";
+import { Customer, CustomerProductPrice } from "../../types/product";
 import { Spinner } from "../ui/spinner";
+import { Switch } from "../ui/switch";
+import { Product } from "../Products/Products";
 
 interface BulkAssignModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedProducts: Product[];
+  setSelectedProducts: Dispatch<SetStateAction<Product[]>>;
 }
 
 const BulkAssignModal: React.FC<BulkAssignModalProps> = ({
   open,
   onOpenChange,
   selectedProducts,
+  setSelectedProducts
 }) => {
   const { success, errorToast } = useToastActions();
   const dispatch = useDispatch<AppDispatch>();
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [customerPrices, setCustomerPrices] = useState<Record<string, Record<string, number>>>({});
+  // const [selectedProducts, setSelectedProducts] = useState(selectedCustomers)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { customers, loading } = useSelector((state: any) => state.customer);
@@ -100,6 +105,7 @@ const BulkAssignModal: React.FC<BulkAssignModalProps> = ({
             customerId,
             productId: product._id,
             price: customerPrices[customerId][product._id],
+            taxEnabled: product.taxEnabled
           });
         });
       });
@@ -119,7 +125,17 @@ const BulkAssignModal: React.FC<BulkAssignModalProps> = ({
     }
   };
 
+  const handleUpdateTaxStatus = (taxEnabled: boolean, productId: string) => {
+    // Update the tax status for the product in the selected products
+    const updatedProducts = selectedProducts.map(product => {
+      if (product._id === productId) {
+        return { ...product, taxEnabled };
+      }
+      return product;
+    });
 
+    setSelectedProducts(updatedProducts);
+  };
 
   return (
     <>
@@ -166,6 +182,12 @@ const BulkAssignModal: React.FC<BulkAssignModalProps> = ({
                                 />
                               )}
                               <span>{product.name}</span>
+                            </div>
+                            <div >
+                              <label id="taxEnabled" children={"Apply Tax"} className="mr-1 text-center" />
+                              <Switch id="taxEnabled" checked={product.taxEnabled}
+                                onCheckedChange={(taxStatus: boolean) => handleUpdateTaxStatus(taxStatus, product._id)}
+                              />
                             </div>
                             <Input
                               type="number"

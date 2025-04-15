@@ -18,6 +18,19 @@ import { Pencil } from "lucide-react";
 import React from "react";
 import { Checkbox } from "../ui/checkbox";
 import { Pagination } from "../Pagination/Pagination";
+import { Switch } from "../ui/switch";
+
+type Props = {
+  customerPrices: Product[];
+  editPrice: (productId: string, customerPrice: number) => void;
+  filterText: string;
+  isAllSelected: boolean;
+  setFilterText: (e: string) => void;
+  selectAll: (e: boolean) => void;
+  setSelectedProducts: (checked: boolean, product: Product) => void;
+  selectedProducts: string[];
+  updateTaxStatus: (taxEnabled: boolean, productId: string) => void;
+};
 
 type Product = {
   _id: string;
@@ -25,6 +38,7 @@ type Product = {
   unitPrice: number;
   customerPrice: number;
   image?: string;
+  taxEnabled?: boolean;
 };
 
 const CustomerProductPricesTable = ({
@@ -36,16 +50,8 @@ const CustomerProductPricesTable = ({
   selectAll,
   setSelectedProducts,
   selectedProducts,
-}: {
-  customerPrices: Product[];
-  editPrice: (productId: string, customerPrice: number) => void;
-  filterText: string;
-  isAllSelected: boolean;
-  setFilterText: (e: string) => void;
-  selectAll: (e: boolean) => void;
-  setSelectedProducts: (checked: boolean, product: Product) => void;
-  selectedProducts: string[];
-}) => {
+  updateTaxStatus
+}: Props) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
@@ -97,6 +103,15 @@ const CustomerProductPricesTable = ({
         accessorKey: "customerPrice",
         header: "Customer Price",
         cell: (info) => `$${info.getValue()}`,
+      },
+      {
+        accessorKey: "taxEnabled",
+        header: "Apply Tax",
+        cell: ({ row }) => <div>{
+          <Switch checked={row.original.taxEnabled}
+            onCheckedChange={(taxEnabled: boolean) => updateTaxStatus(taxEnabled, row.original._id)}
+          />
+        }</div>,
       },
       {
         id: "actions",

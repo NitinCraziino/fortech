@@ -10,6 +10,7 @@ export interface Product {
   customerPrice?: number;
   createdAt?: string;
   updatedAt?: string;
+  taxEnabled?: boolean;
 }
 
 export interface CustomerProduct extends Product {
@@ -30,6 +31,7 @@ export interface CustomerProductPrice {
   productId: string;
   customerId: string;
   price: number;
+  taxEnabled?: boolean;
 }
 
 export interface BulkAssignPayload {

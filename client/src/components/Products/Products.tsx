@@ -13,6 +13,7 @@ import {
   updateProductStatusAsync,
   bulkPriceUpdate,
   toggleProductTaxStatus,
+  toggleCustomerProductTaxStatus,
 } from "@/redux/slices/productSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
@@ -20,7 +21,7 @@ import { useToastActions } from "@/lib/utils";
 import { Spinner } from "../ui/spinner";
 import BulkAssignModal from "../modals/BulkAssignModal";
 
-interface Product {
+export interface Product {
   _id: string;
   name: string;
   partNo: string;
@@ -86,15 +87,17 @@ const Products: React.FC = () => {
       }
     }
   };
+
   const handleTaxStatusUpdate = async (taxEnabled: boolean, productId: string) => {
     try {
-      await dispatch(toggleProductTaxStatus({ productId, taxEnabled })).unwrap();
-      success("Tax status updated.");
       if (user.admin) {
+        await dispatch(toggleProductTaxStatus({ productId, taxEnabled })).unwrap();
         dispatch(getProductsAsync({}));
       } else {
+        await dispatch(toggleCustomerProductTaxStatus({ productId, taxEnabled, customerId: user._id }));
         dispatch(getCustomerProductsAsync({}));
       }
+      success("Tax status updated.");
     } catch (error) {
       console.log(error);
     }
@@ -210,6 +213,7 @@ const Products: React.FC = () => {
       <BulkAssignModal
         open={isAssignModalOpen}
         onOpenChange={setIsAssignModalOpen}
+        setSelectedProducts={setSelectedProducts}
         selectedProducts={selectedProducts}
       />
     </div>
