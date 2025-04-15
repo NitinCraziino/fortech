@@ -12,6 +12,7 @@ import {
   selectOrderProducts,
   updateProductStatusAsync,
   bulkPriceUpdate,
+  toggleProductTaxStatus,
 } from "@/redux/slices/productSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
@@ -27,6 +28,7 @@ interface Product {
   unitOfMeasure: string;
   description: string;
   active: boolean;
+  taxEnabled: boolean;
   image: string;
   customerPrice: number;
 }
@@ -84,6 +86,20 @@ const Products: React.FC = () => {
       }
     }
   };
+  const handleTaxStatusUpdate = async (taxEnabled: boolean, productId: string) => {
+    try {
+      await dispatch(toggleProductTaxStatus({ productId, taxEnabled })).unwrap();
+      success("Tax status updated.");
+      if (user.admin) {
+        dispatch(getProductsAsync({}));
+      } else {
+        dispatch(getCustomerProductsAsync({}));
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const handleButtonClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click(); // Trigger the hidden file input click
@@ -126,9 +142,9 @@ const Products: React.FC = () => {
                 Bulk Update Prices
               </Button>
               {selectedProducts.length > 0 && (
-                <Button 
-                  onClick={() => setIsAssignModalOpen(true)} 
-                  className="min-w-[130px]" 
+                <Button
+                  onClick={() => setIsAssignModalOpen(true)}
+                  className="min-w-[130px]"
                   size="lg"
                 >
                   Assign to Customers
@@ -153,6 +169,7 @@ const Products: React.FC = () => {
           pageIndex={currentPage}
           pageSize={rowsPerPage}
           isAllSelected={isAllSelected}
+          updateTaxStatus={handleTaxStatusUpdate}
           selectAll={(isSelected) => {
             if (isSelected) {
               setAllSelected(true);

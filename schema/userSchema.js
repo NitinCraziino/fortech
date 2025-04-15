@@ -13,17 +13,13 @@ const UserSchema = new mongoose.Schema(
     },
     password: String,
     active: Boolean,
-    taxEnabled: {
-      type: Boolean,
-      default: false
-    },
     admin: {
       type: Boolean,
       required: true,
       default: true,
     },
   },
-  { timestamps: true }
+  {timestamps: true}
 );
 
 const User = mongoose.model("User", UserSchema);

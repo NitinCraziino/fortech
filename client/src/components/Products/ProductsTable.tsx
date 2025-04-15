@@ -37,6 +37,7 @@ export type Product = {
   description: string;
   active: boolean;
   image: string;
+  taxEnabled: boolean;
   customerPrice: number;
 };
 
@@ -44,6 +45,7 @@ export function ProductsTable(props: {
   products: Product[];
   isAdmin: boolean;
   updateStatus: (active: boolean, _id: string) => void;
+  updateTaxStatus: (taxEnabled: boolean, _id: string) => void;
   filterText: string;
   setFilterText: (e: string) => void;
   setSelectedProducts: (e: boolean, product: Product) => void;
@@ -150,6 +152,15 @@ export function ProductsTable(props: {
           <div className="max-w-[300px] truncate">{row.getValue("description")}</div>
         ),
         filterFn: "includesString",
+      },
+      {
+        id: "taxEnabled",
+        header: "Tax Enabled",
+        cell: ({ row }) => <div>{
+          <Switch checked={row.original.taxEnabled}
+            onCheckedChange={(e: boolean) => props.updateTaxStatus(e, row.original._id)}
+          />
+        }</div>,
       },
       {
         id: "actions",

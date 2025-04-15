@@ -24,6 +24,10 @@ const ProductSchema = new mongoose.Schema(
     image: String,
     active: Boolean,
     isDeleted: {type: Boolean, default: false},
+    taxEnabled: {
+      type: Boolean,
+      default: true
+    }
   },
   {timestamps: true}
 );

@@ -5,6 +5,7 @@ const csvParser = require("csv-parser");
 const fs = require("fs");
 const CustomerProduct = require("../schema/customerProductSchema");
 const mongoose = require("mongoose");
+
 const createProduct = async (req, res) => {
   try {
     const image = req.file ? `/uploads/${req.file.filename}` : null;
@@ -70,11 +71,16 @@ const editProduct = async (req, res) => {
 const getAllProducts = async (req, res) => {
   try {
     const products = await Product.find().sort({createdAt: -1}).lean().exec();
+
+    products.forEach(product => {
+      product.taxEnabled = typeof product.taxEnabled === "boolean" ? product.taxEnabled : true;
+    });
     res.status(200).json({products});
   } catch (error) {
     res.status(500).json({error: error.message || "Error getting products."});
   }
 };
+
 
 const getCustomerProducts = async (req, res) => {
   try {
@@ -134,6 +140,7 @@ const getCustomerPrices = async (req, res) => {
       const products = customerProduct.products.map((p) => ({
         ...p.productId,
         customerPrice: p.price,
+        taxEnabled: p.taxEnabled
         // Attach full product details
       }));
       res.status(200).json({products});
@@ -256,7 +263,7 @@ const importCustomerProducts = async (req, res) => {
     console.log("CSV File Parsed:", records);
 
     for (const row of records) {
-      const {partNo, unitPrice, customerPrice, productName, description, unit} = row;
+      const {partNo, unitPrice, customerPrice, productName, description, unit, taxEnabled} = row;
 
       if (!partNo || !productName || !unitPrice) {
         console.warn("Skipping invalid row:", row);
@@ -281,7 +288,7 @@ const importCustomerProducts = async (req, res) => {
           unit,
           unitPrice, // Store the image URL
           active: true,
-          name: productName,
+          name: productName
         });
         product = await newProduct.save(); // Create new product
         console.log(`New product added: ${productName}`);
@@ -305,7 +312,11 @@ const importCustomerProducts = async (req, res) => {
           {customerId},
           {
             $addToSet: {
-              products: {productId: product._id, price: customerProductPrice},
+              products: {
+                productId: product._id,
+                price: customerProductPrice,
+                taxEnabled: taxEnabled ? taxEnabled : false
+              },
             },
           },
           {new: true, upsert: true}
@@ -336,7 +347,7 @@ const assignProductsToCustomers = async (req, res) => {
     const productIds = [...new Set(assignments.map(a => a.productId))];
     const customerIds = [...new Set(assignments.map(a => a.customerId))];
 
-    // Verify all products exist and are active
+    // Verify all products exist
     const products = await Product.find({
       _id: {$in: productIds}
     });
@@ -415,6 +426,53 @@ const assignProductsToCustomers = async (req, res) => {
 };
 
 
+const toggleProductTaxStatus = async (req, res) => {
+  try {
+    console.log("🚀 ~ toggleProductTaxStatus ~ req.body:", req.body);
+    const {productId, taxEnabled} = req.body;
+
+    const updatedProduct = await Product.findByIdAndUpdate(
+      productId,
+      {taxEnabled},
+      {new: true}
+    );
+
+    if (!updatedProduct) {
+      return res.status(400).json({error: "Invalid product"});
+    }
+
+    res.status(200).json({product: updatedProduct});
+  } catch (error) {
+    res.status(500).json({error: error.message || "Error updating product tax status."});
+  }
+};
+
+// Add this function to toggle tax status for a customer-specific product
+const toggleCustomerProductTaxStatus = async (req, res) => {
+  try {
+    const {customerId, productId, taxEnabled} = req.body;
+
+    const customerProduct = await CustomerProduct.findOneAndUpdate(
+      {
+        customerId,
+        "products.productId": productId
+      },
+      {
+        $set: {"products.$.taxEnabled": taxEnabled}
+      },
+      {new: true}
+    );
+
+    if (!customerProduct) {
+      return res.status(400).json({error: "Customer product not found"});
+    }
+
+    res.status(200).json({customerProduct});
+  } catch (error) {
+    res.status(500).json({error: error.message || "Error updating customer product tax status."});
+  }
+};
+
 module.exports = {
   createProduct,
   updateProductStatus,
@@ -427,4 +485,6 @@ module.exports = {
   bulkUpdatePrice,
   importCustomerProducts,
   assignProductsToCustomers,
+  toggleCustomerProductTaxStatus,
+  toggleProductTaxStatus
 };

@@ -11,6 +11,7 @@ const CustomerProductSchema = new mongoose.Schema(
       {
         productId: {type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true},
         price: {type: Number, required: true}, // Customer-specific price
+        taxEnabled: {type: Boolean, default: false}
       }
     ]
   },
