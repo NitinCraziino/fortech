@@ -10,6 +10,7 @@ import type { AppDispatch } from "@/store";
 import { getOrderById } from "@/redux/slices/orderSlice";
 import { formatDate } from "@/lib/utils";
 import { Spinner } from "../ui/spinner";
+import { TAX_RATE } from "@/constants";
 
 interface Product {
   price: number;
@@ -41,8 +42,6 @@ interface Order {
   pickupLocation: string;
   comments: string;
   totalPrice: number;
-  subtotal: number;
-  taxAmount: number;
   taxEnabled: boolean;
 }
 
@@ -146,11 +145,9 @@ export default function OrderDetails() {
                   </thead>
                   <tbody>
                     {order?.products.map((product: Product, index: number) => {
-                      // Calculate tax amount for this product
-                      const subtotal = product.price * product.quantity;
-                      const taxRate = order?.taxAmount / order?.subtotal;
-                      const taxAmount = product.taxEnabled ? subtotal * taxRate : 0;
-                      const total = subtotal + taxAmount;
+                      const productSubtotal = product.price * product.quantity;
+                      const productTaxAmount = product.taxEnabled ? productSubtotal * TAX_RATE : 0;
+                      const productTotal = productSubtotal + productTaxAmount;
 
                       return (
                         <tr key={index} className="border-b border-gray-100">
@@ -168,8 +165,8 @@ export default function OrderDetails() {
                           <td className="p-4">$ {product.price}</td>
                           <td className="p-4 ">{product.quantity}</td>
                           <td className="p-4">{product.taxEnabled ? "6%" : "0%"}</td>
-                          <td className="p-4">${taxAmount.toFixed(2)}</td>
-                          <td className="p-4">${total.toFixed(2)}</td>
+                          <td className="p-4">${productTaxAmount.toFixed(2)}</td>
+                          <td className="p-4">${productTotal.toFixed(2)}</td>
                         </tr>
                       );
                     })}
@@ -184,7 +181,7 @@ export default function OrderDetails() {
                       <td colSpan={2} className="p-2 text-right font-medium">
                         Total Items:
                       </td>
-                      <td className="p-2">
+                      <td className="p-2" colSpan={2}>
                         {order?.products.reduce((sum: number, product: Product) => sum + product.quantity, 0)}
                       </td>
                     </tr>
@@ -193,7 +190,9 @@ export default function OrderDetails() {
                       <td colSpan={2} className="p-2 text-right font-medium">
                         Total:
                       </td>
-                      <td className="p-4">${order?.totalPrice.toFixed(2)}</td>
+                      <td className="p-4" colSpan={2}>
+                        ${order?.totalPrice.toFixed(2)}
+                      </td>
                     </tr>
                   </tfoot>
                 </table>
