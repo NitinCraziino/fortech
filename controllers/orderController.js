@@ -91,7 +91,7 @@ const createOrder = async (req, res) => {
 
     const admin = await User.findOne({admin: true}).lean().exec();
 
-    const s = await sendEmail({
+    await sendEmail({
       to: admin.email,
       from: "brian@naisupply.com",
       subject: template.subject,
