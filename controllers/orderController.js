@@ -73,39 +73,37 @@ const createOrder = async (req, res) => {
     });
 
     const savedOrder = await newOrder.save();
-    const emailTemplate = await EmailTemplate.findOne({type: "ORDER_CONFIRMATION"}).lean().exec();
+    const emailTemplate = await EmailTemplate.findOne({type: "ORDER CONFIRMATION"}).lean().exec();
 
-    if (emailTemplate) {
-      sendEmail({
-        to: user.email,
-        from: "brian@naisupply.com",
-        subject: emailTemplate.subject,
-        html: emailTemplate.body
-          .replace("[username]", user.name)
-          .replace("[order id]", savedOrder.orderNo)
-          .replace("[amount]", savedOrder.totalPrice.toFixed(2))
-          .replace("[order date & time]", savedOrder.createdAt.toLocaleString())
-          .replace("[vieworderlink]", `https://www.naisorders.com/view-order/${savedOrder._id}`),
-      });
-    }
+    sendEmail({
+      to: user.email,
+      from: "brian@naisupply.com",
+      subject: emailTemplate.subject,
+      html: emailTemplate.body
+        .replace("[username]", user.name)
+        .replace("[order id]", savedOrder.orderNo)
+        .replace("[amount]", savedOrder.totalPrice)
+        .replace("[order date & time]", savedOrder.createdAt)
+        .replace("[vieworderlink]", `https://www.naisorders.com/view-order/${savedOrder._id}`),
+    });
 
-    const template = await EmailTemplate.findOne({type: "NEW_ORDER"}).lean().exec();
+    const template = await EmailTemplate.findOne({type: "NEW ORDER"}).lean().exec();
+
     const admin = await User.findOne({admin: true}).lean().exec();
 
-    if (template && admin) {
-      sendEmail({
-        to: admin.email,
-        from: "brian@naisupply.com",
-        subject: template.subject,
-        html: template.body
-          .replace("[username]", admin.name)
-          .replace("[customer name]", user.name)
-          .replace("[order id]", savedOrder.orderNo)
-          .replace("[amount]", savedOrder.totalPrice.toFixed(2))
-          .replace("[order date & time]", savedOrder.createdAt.toLocaleString())
-          .replace("[vieworderlink]", `https://www.naisorders.com/view-order/${savedOrder._id}`),
-      });
-    }
+    const s = await sendEmail({
+      to: admin.email,
+      from: "brian@naisupply.com",
+      subject: template.subject,
+      html: template.body
+        .replace("[username]", admin.name)
+        .replace("[customer name]", user.name)
+        .replace("[order id]", savedOrder.orderNo)
+        .replace("[amount]", savedOrder.totalPrice)
+        .replace("[order date & time]", savedOrder.createdAt)
+        .replace("[vieworderlink]", `https://www.naisorders.com/view-order/${savedOrder._id}`),
+    });
+
 
     res.status(200).json({order: savedOrder});
   } catch (error) {
