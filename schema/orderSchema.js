@@ -21,7 +21,12 @@ const OrderSchema = new mongoose.Schema(
         price: {
           type: Number,
           required: true
-        }
+        },
+        taxEnabled: {
+          type: Boolean,
+          required: true,
+          default: false
+        },
       }
     ],
     userId: {type: mongoose.Schema.Types.ObjectId, ref: "User", required: true},
@@ -29,20 +34,10 @@ const OrderSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    subtotal: {
-      type: Number,
-      required: true,
-      default: 0
-    },
     taxAmount: {
       type: Number,
       required: true,
       default: 0
-    },
-    taxApplied: {
-      type: Boolean,
-      required: true,
-      default: false
     },
     totalPrice: {
       type: Number,

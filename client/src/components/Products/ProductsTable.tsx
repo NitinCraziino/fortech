@@ -37,6 +37,7 @@ export type Product = {
   description: string;
   active: boolean;
   image: string;
+  taxEnabled: boolean;
   customerPrice: number;
 };
 
@@ -44,6 +45,7 @@ export function ProductsTable(props: {
   products: Product[];
   isAdmin: boolean;
   updateStatus: (active: boolean, _id: string) => void;
+  updateTaxStatus: (taxEnabled: boolean, _id: string) => void;
   filterText: string;
   setFilterText: (e: string) => void;
   setSelectedProducts: (e: boolean, product: Product) => void;
@@ -150,61 +152,78 @@ export function ProductsTable(props: {
           <div className="max-w-[300px] truncate">{row.getValue("description")}</div>
         ),
         filterFn: "includesString",
-      },
-      {
-        id: "actions",
-        header: () => {
-          return <div className="text-center">Actions</div>;
-        },
-        enableHiding: false,
-        cell: ({ row }) => {
-          const product = row.original;
-          const handleDelete = () => {
-            // Handle delete logic here
-            console.log("Deleting product:", product._id);
-          };
+      }
+    ];
 
-          return (
-            <>
-              <div className="flex items-center justify-center gap-2">
-                <Button
-                  onClick={() => navigate(`/view-product/${product._id}`)}
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-                {props.isAdmin && (
-                  <React.Fragment>
-                    <Button
-                      onClick={() => navigate(`/edit-product/${product._id}`)}
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    {/* <Button variant="ghost" size="icon" className="h-8 w-8">
+
+    if (props.isAdmin) {
+      columns.push(
+        {
+          id: "taxEnabled",
+          header: "Apply Tax",
+          cell: ({ row }) => <div>{
+            <Switch checked={row.original.taxEnabled}
+              onCheckedChange={(e: boolean) => props.updateTaxStatus(e, row.original._id)}
+            />
+          }</div>,
+        }
+      );
+    }
+
+    columns.push({
+      id: "actions",
+      header: () => {
+        return <div className="text-center">Actions</div>;
+      },
+      enableHiding: false,
+      cell: ({ row }) => {
+        const product = row.original;
+        const handleDelete = () => {
+          // Handle delete logic here
+          console.log("Deleting product:", product._id);
+        };
+
+        return (
+          <>
+            <div className="flex items-center justify-center gap-2">
+              <Button
+                onClick={() => navigate(`/view-product/${product._id}`)}
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+              {props.isAdmin && (
+                <React.Fragment>
+                  <Button
+                    onClick={() => navigate(`/edit-product/${product._id}`)}
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  {/* <Button variant="ghost" size="icon" className="h-8 w-8">
                       <Trash2 className="h-4 w-4" />
                     </Button> */}
-                    <Switch
-                      onCheckedChange={(e: boolean) => props.updateStatus(e, product._id)}
-                      checked={product.active}
-                    />
-                  </React.Fragment>
-                )}
-              </div>
-              <DeleteProductModal
-                open={false}
-                onOpenChange={(e) => console.log(e)}
-                onConfirm={handleDelete}
-              />
-            </>
-          );
-        },
+                  <Switch
+                    onCheckedChange={(e: boolean) => props.updateStatus(e, product._id)}
+                    checked={product.active}
+                  />
+                </React.Fragment>
+              )}
+            </div>
+            <DeleteProductModal
+              open={false}
+              onOpenChange={(e) => console.log(e)}
+              onConfirm={handleDelete}
+            />
+          </>
+        );
       },
-    ];
+    });
+
     return columns;
   };
 

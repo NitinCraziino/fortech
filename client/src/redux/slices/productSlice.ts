@@ -1,5 +1,5 @@
 // src/redux/slices/authSlice.ts
-import { getApi, postApi } from "@/api/api";
+import { getApi, postApi, putApi } from "@/api/api";
 import {
   CREATEPRODUCT,
   GETALLPRODUCTS,
@@ -12,6 +12,8 @@ import {
   BULKUPDATEPRICE,
   IMPORTCUSTOMERPRODUCTS,
   ASSIGNPRODUCTSTOCUSTOMERS,
+  TOGGLEPRODUCTTAXSTATUS,
+  TOGGLECUSTOMERPRODUCTTAXSTATUS,
 } from "@/api/apiConstants";
 import { BulkAssignPayload } from "@/types/product";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
@@ -39,8 +41,8 @@ export interface ProductState {
   loading: boolean;
   error: string | null;
   product: null | object;
-  orderProducts: Array<Product>
-  customerPrices: Array<CustomerPrices>
+  orderProducts: Array<Product>;
+  customerPrices: Array<CustomerPrices>;
 }
 
 // Define the initial state
@@ -49,7 +51,7 @@ const initialState: ProductState = {
   loading: false,
   error: null,
   product: null,
-  orderProducts:[],
+  orderProducts: [],
   customerPrices: [],
 };
 
@@ -64,7 +66,7 @@ export const createProductAsync = createAsyncThunk(
       unit,
       unitPrice,
       image,
-    }: {name: string; partNo: string; description: string; unit: string; unitPrice: string; image: File | null },
+    }: { name: string; partNo: string; description: string; unit: string; unitPrice: string; image: File | null; },
     { rejectWithValue }
   ) => {
     try {
@@ -132,9 +134,9 @@ export const getCustomerProductsAsync = createAsyncThunk(
 export const getCustomerPricesAsync = createAsyncThunk(
   "product/getCustomerPrices",
   // eslint-disable-next-line no-empty-pattern, @typescript-eslint/no-explicit-any
-  async ({userId}: {userId: string}, { rejectWithValue }) => {
+  async ({ userId }: { userId: string; }, { rejectWithValue }) => {
     try {
-      const response = await postApi(GETCUSTOMERPRICES, {userId}, {}, false);
+      const response = await postApi(GETCUSTOMERPRICES, { userId }, {}, false);
       // Assuming the response contains user data and token
       return {
         products: response.products,
@@ -148,9 +150,35 @@ export const getCustomerPricesAsync = createAsyncThunk(
   }
 );
 
+export const toggleCustomerProductTaxStatus = createAsyncThunk(
+  "user/toggleTaxStatus",
+  async ({ productId, taxEnabled, customerId }: { productId: string; taxEnabled: boolean; customerId: string; }, { rejectWithValue }) => {
+    try {
+      const response = await putApi(TOGGLECUSTOMERPRODUCTTAXSTATUS, { productId, taxEnabled, customerId }, {}, false);
+      return response;
+    } catch (error: any) {
+      const message = error?.response?.data.message; // Return error in case of failure
+      return rejectWithValue(message ? message : "Invite failed. Please try again.");
+    }
+  }
+);
+
+export const toggleProductTaxStatus = createAsyncThunk(
+  "product/toggleTaxStatus",
+  async ({ productId, taxEnabled }: { productId: string; taxEnabled: boolean; }, { rejectWithValue }) => {
+    try {
+      const response = await putApi(TOGGLEPRODUCTTAXSTATUS, { productId, taxEnabled }, {}, false);
+      return response;
+    } catch (error: any) {
+      const message = error?.response?.data.message; // Return error in case of failure
+      return rejectWithValue(message ? message : "Invite failed. Please try again.");
+    }
+  }
+);
+
 export const getProductById = createAsyncThunk(
   "product/getById",
-  async ({ _id }: { _id: string }, { rejectWithValue }) => {
+  async ({ _id }: { _id: string; }, { rejectWithValue }) => {
     try {
       const response = await getApi(GETPRODUCTBYID.replace(":id", _id), {}, {}, false);
 
@@ -184,7 +212,7 @@ export const editProductAsync = createAsyncThunk(
       unit: string;
       unitPrice: string;
       image: File | null;
-      name: string
+      name: string;
     },
     { rejectWithValue }
   ) => {
@@ -267,7 +295,7 @@ export const importCustomerProducts = createAsyncThunk(
 
 export const updateProductStatusAsync = createAsyncThunk(
   "product/update",
-  async ({ productId, active }: { productId: string; active: boolean }, { rejectWithValue }) => {
+  async ({ productId, active }: { productId: string; active: boolean; }, { rejectWithValue }) => {
     try {
       const response = await postApi(UPDATEPRODUCTSTATUS, { productId, active }, {}, false);
 
@@ -286,9 +314,9 @@ export const updateProductStatusAsync = createAsyncThunk(
 
 export const updateCustomerPriceAsync = createAsyncThunk(
   "product/updateCustomerPrice",
-  async ({ productId, customerId, price }: { productId: string;   customerId: string; price: number}, { rejectWithValue }) => {
+  async ({ productId, customerId, price }: { productId: string; customerId: string; price: number; }, { rejectWithValue }) => {
     try {
-      const response = await postApi(UPDATECUSTOMERPRICE, { productId, customerId,  price}, {}, false);
+      const response = await postApi(UPDATECUSTOMERPRICE, { productId, customerId, price }, {}, false);
 
       // Assuming the response contains user data and token
       return {
@@ -337,7 +365,7 @@ const productSlice = createSlice({
         state.error = action.payload as string;
       });
 
-      builder
+    builder
       .addCase(bulkPriceUpdate.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -351,7 +379,7 @@ const productSlice = createSlice({
         state.error = action.payload as string;
       });
 
-      builder
+    builder
       .addCase(importCustomerProducts.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -380,7 +408,7 @@ const productSlice = createSlice({
         state.error = action.payload as string;
       });
 
-      builder
+    builder
       .addCase(getCustomerProductsAsync.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -395,7 +423,33 @@ const productSlice = createSlice({
         state.error = action.payload as string;
       });
 
-      builder
+    builder
+      .addCase(toggleProductTaxStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(toggleProductTaxStatus.fulfilled, (state, action) => {
+        state.loading = false;
+      })
+      .addCase(toggleProductTaxStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    builder
+      .addCase(toggleCustomerProductTaxStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(toggleCustomerProductTaxStatus.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(toggleCustomerProductTaxStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message as string;
+      });
+
+    builder
       .addCase(getCustomerPricesAsync.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -410,7 +464,7 @@ const productSlice = createSlice({
         state.error = action.payload as string;
       });
 
-      builder
+    builder
       .addCase(updateCustomerPriceAsync.pending, (state) => {
         state.loading = true;
         state.error = null;

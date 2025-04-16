@@ -3,6 +3,7 @@ import { AppDispatch } from "@/store";
 import { useDispatch, useSelector } from "react-redux";
 import {
   getCustomerPricesAsync,
+  toggleCustomerProductTaxStatus,
   importCustomerProducts,
   updateCustomerPriceAsync,
 } from "@/redux/slices/productSlice";
@@ -14,9 +15,7 @@ import { UpdatePriceModal } from "../modals/UpdatePriceModal";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { DeleteProductModal } from "../modals/DeleteProductModal";
-import { deleteProductsAsync, getCustomerAsync, updateCustomerTaxStatusAsync } from "@/redux/slices/customerSlice";
-import { Switch } from "../ui/switch";
-import { Label } from "../ui/label";
+import { deleteProductsAsync, getCustomerAsync } from "@/redux/slices/customerSlice";
 
 
 interface Product {
@@ -51,6 +50,7 @@ const CustomerProductsPrices: React.FC = () => {
   const { customerPrices, loading, error } = useSelector((state: { product: ProductState; }) => state.product);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { customer } = useSelector((state: any) => state.customer);
+  const { user } = useSelector((state: any) => state.auth);
   console.log("🚀 ~ customer:", customer);
   useEffect(() => {
     if (id) {
@@ -109,11 +109,12 @@ const CustomerProductsPrices: React.FC = () => {
     }
   };
 
-  const handleTaxToggle = async () => {
+  const handleTaxToggle = async (taxEnabled: boolean, productId: string) => {
     try {
       if (id) {
-        await dispatch(updateCustomerTaxStatusAsync({ customerId: id, status: !customer?.taxEnabled })).unwrap();
+        await dispatch(toggleCustomerProductTaxStatus({ customerId: id, productId, taxEnabled })).unwrap();
         success("Tax status updated successfully");
+        dispatch(getCustomerPricesAsync({ userId: id }));
       }
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
@@ -121,6 +122,8 @@ const CustomerProductsPrices: React.FC = () => {
       errorToast("Failed to update tax status");
     }
   };
+
+
 
   return (
     <div className="p-6">
@@ -148,14 +151,6 @@ const CustomerProductsPrices: React.FC = () => {
             id="imageUpload"
           />
           <div className="flex gap-4 items-center">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="tax-toggle"
-                checked={customer?.taxEnabled}
-                onCheckedChange={handleTaxToggle}
-              />
-              <Label htmlFor="tax-toggle">Apply Tax</Label>
-            </div>
             <Button onClick={handleButtonClick} className="min-w-[130px]" size="lg">
               Import Products
             </Button>
@@ -180,6 +175,7 @@ const CustomerProductsPrices: React.FC = () => {
           />
           <CustomerProductTable
             isAllSelected={isAllSelected}
+            updateTaxStatus={handleTaxToggle}
             selectAll={(isSelected) => {
               console.log(customerPrices);
               if (isSelected) {

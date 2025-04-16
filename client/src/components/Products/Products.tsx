@@ -12,6 +12,8 @@ import {
   selectOrderProducts,
   updateProductStatusAsync,
   bulkPriceUpdate,
+  toggleProductTaxStatus,
+  toggleCustomerProductTaxStatus,
 } from "@/redux/slices/productSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
@@ -19,7 +21,7 @@ import { useToastActions } from "@/lib/utils";
 import { Spinner } from "../ui/spinner";
 import BulkAssignModal from "../modals/BulkAssignModal";
 
-interface Product {
+export interface Product {
   _id: string;
   name: string;
   partNo: string;
@@ -27,6 +29,7 @@ interface Product {
   unitOfMeasure: string;
   description: string;
   active: boolean;
+  taxEnabled: boolean;
   image: string;
   customerPrice: number;
 }
@@ -84,6 +87,22 @@ const Products: React.FC = () => {
       }
     }
   };
+
+  const handleTaxStatusUpdate = async (taxEnabled: boolean, productId: string) => {
+    try {
+      if (user.admin) {
+        await dispatch(toggleProductTaxStatus({ productId, taxEnabled })).unwrap();
+        dispatch(getProductsAsync({}));
+      } else {
+        await dispatch(toggleCustomerProductTaxStatus({ productId, taxEnabled, customerId: user._id }));
+        dispatch(getCustomerProductsAsync({}));
+      }
+      success("Tax status updated.");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const handleButtonClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click(); // Trigger the hidden file input click
@@ -126,9 +145,9 @@ const Products: React.FC = () => {
                 Bulk Update Prices
               </Button>
               {selectedProducts.length > 0 && (
-                <Button 
-                  onClick={() => setIsAssignModalOpen(true)} 
-                  className="min-w-[130px]" 
+                <Button
+                  onClick={() => setIsAssignModalOpen(true)}
+                  className="min-w-[130px]"
                   size="lg"
                 >
                   Assign to Customers
@@ -153,6 +172,7 @@ const Products: React.FC = () => {
           pageIndex={currentPage}
           pageSize={rowsPerPage}
           isAllSelected={isAllSelected}
+          updateTaxStatus={handleTaxStatusUpdate}
           selectAll={(isSelected) => {
             if (isSelected) {
               setAllSelected(true);
@@ -190,11 +210,14 @@ const Products: React.FC = () => {
           }}
         />
       </div>
-      <BulkAssignModal
-        open={isAssignModalOpen}
-        onOpenChange={setIsAssignModalOpen}
-        selectedProducts={selectedProducts}
-      />
+      {isAssignModalOpen && (
+        <BulkAssignModal
+          open={isAssignModalOpen}
+          onOpenChange={setIsAssignModalOpen}
+          setSelectedProducts={setSelectedProducts}
+          selectedProducts={selectedProducts}
+        />
+      )}
     </div>
   );
 };
