@@ -52,6 +52,10 @@ const OrderSchema = new mongoose.Schema(
     isDeleted: {
       type: Boolean,
       default: false
+    },
+    status: {
+      type: String,
+      default: "Processing"
     }
   },
   {timestamps: true}

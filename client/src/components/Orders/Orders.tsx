@@ -7,10 +7,11 @@ import { Pagination } from "../Pagination/Pagination";
 import { OrdersTable } from "./OrdersTable";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
-import { exportOrderAsync, getAllOrders, getOrdersAsync, fulFillOrdersAsync } from "@/redux/slices/orderSlice";
+import { exportOrderAsync, getAllOrders, getOrdersAsync, fulFillOrdersAsync, deleteOrder } from "@/redux/slices/orderSlice";
 import { Input } from "../ui/input";
 import { Spinner } from "../ui/spinner";
 import { FulfillOrdersDialog } from "../modals/FulfillOrdersDialog";
+import { ConfirmDeleteOrder } from "../modals/ComfirmDeleteOrder";
 
 export type Order = {
   _id: string;
@@ -44,6 +45,7 @@ const Orders: React.FC = () => {
   const [isAllSelected, setAllSelected] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [isFulfillDialogOpen, setIsFulfillDialogOpen] = useState(false);
+  const [deletingOrder, setDeletingOrder] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { user } = useSelector((state: any) => state.auth);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -63,7 +65,13 @@ const Orders: React.FC = () => {
   const handleFulfillOrders = async (orderIds: string[]) => {
     if (!user.admin) return;
     await dispatch(fulFillOrdersAsync({ orderIds }));
-    dispatch(getAllOrders({}));
+    await dispatch(getAllOrders({}));
+  };
+
+  const handleDelete = async () => {
+    if (!user.admin || !deletingOrder) return;
+    await dispatch(deleteOrder({ orderId: deletingOrder }));
+    await dispatch(getAllOrders({}));
   };
 
   return (
@@ -131,6 +139,9 @@ const Orders: React.FC = () => {
             }
           }}
           selectedOrders={selectedOrders}
+          handleDelete={(orderId) => {
+            setDeletingOrder(orderId);
+          }}
         />
         <Pagination
           currentPage={currentPage}
@@ -149,6 +160,11 @@ const Orders: React.FC = () => {
         selectedOrders={selectedOrders}
         onConfirm={handleFulfillOrders}
         isLoading={loading}
+      />
+      <ConfirmDeleteOrder
+        isOpen={!!deletingOrder}
+        setOpen={() => setDeletingOrder(null)}
+        onConfirm={handleDelete}
       />
     </div>
   );

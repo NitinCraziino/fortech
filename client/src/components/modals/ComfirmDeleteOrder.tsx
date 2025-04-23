@@ -10,28 +10,24 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
-interface FulfillOrdersDialogProps {
+type Props = {
     isOpen: boolean;
     setOpen: (open: boolean) => void;
-    selectedOrders: string[];
-    onConfirm: (orderIds: string[]) => void;
-    isLoading?: boolean;
-}
+    onConfirm: () => Promise<void>;
+};
 
-export function FulfillOrdersDialog({
+export function ConfirmDeleteOrder({
     isOpen,
     setOpen,
-    selectedOrders,
     onConfirm,
-    isLoading = false,
-}: FulfillOrdersDialogProps) {
+}: Props) {
     return (
         <Dialog open={isOpen} onOpenChange={setOpen}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Fulfill Selected Orders</DialogTitle>
                     <DialogDescription>
-                        Are you sure you want to mark {selectedOrders.length} selected order{selectedOrders.length !== 1 ? 's' : ''} as fulfilled?
+                        Are you sure you want to Delete the selected Order. This action can't be undone.
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2">
@@ -39,19 +35,17 @@ export function FulfillOrdersDialog({
                         type="button"
                         variant="outline"
                         onClick={() => setOpen(false)}
-                        disabled={isLoading}
                     >
                         Cancel
                     </Button>
                     <Button
                         type="button"
                         onClick={() => {
-                            onConfirm(selectedOrders);
+                            onConfirm();
                             setOpen(false);
                         }}
-                        disabled={isLoading}
                     >
-                        {isLoading ? "Processing..." : "Fulfill Orders"}
+                        Delete Order
                     </Button>
                 </DialogFooter>
             </DialogContent>

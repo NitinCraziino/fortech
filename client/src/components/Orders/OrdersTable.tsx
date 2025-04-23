@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronsUpDown, Eye } from "lucide-react";
+import { ChevronsUpDown, Eye, Trash2Icon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -51,6 +51,7 @@ export type Order = {
   deliveryDate: Date | null;
   poNumber: string;
   isDeleted: boolean;
+  status: "Processing" | "Fulfilled";
 };
 
 export function OrdersTable(props: {
@@ -65,6 +66,7 @@ export function OrdersTable(props: {
   selectAll: (e: boolean) => void;
   setSelectedOrders: (e: boolean, order: string) => void;
   selectedOrders: string[];
+  handleDelete?: (orderId: string) => void;
 }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -115,8 +117,8 @@ export function OrdersTable(props: {
             );
           },
           cell: ({ row }) => {
-            const variant = row.getValue("isDeleted") ? "fulfilled" : "processing";
-            const text = row.getValue("isDeleted") ? "Full filled" : "Processing";
+            const variant = row.original.status === "Fulfilled" ? "fulfilled" : "processing";
+            const text = row.original.status === "Fulfilled" ? row.original.status : "Processing";
             return (
               <Badge variant={variant}>{text}</Badge>
             );
@@ -210,6 +212,16 @@ export function OrdersTable(props: {
                 >
                   <Eye className="h-4 w-4" />
                 </Button>
+                {row.original.status === "Fulfilled" && (
+                  <Button
+                    onClick={() => props.handleDelete?.(row.original._id)}
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                  >
+                    <Trash2Icon className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             );
           },

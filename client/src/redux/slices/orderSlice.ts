@@ -1,6 +1,6 @@
 // src/redux/slices/authSlice.ts
-import { getApi, postApi, putApi } from "@/api/api";
-import { CREATEORDER, GETORDER, GETALLORDERS, GETUSERORDERS, EXPORTORDERS, FULFILLORDERS } from "@/api/apiConstants";
+import { deleteApi, getApi, postApi, putApi } from "@/api/api";
+import { CREATEORDER, GETORDER, GETALLORDERS, GETUSERORDERS, EXPORTORDERS, FULFILLORDERS, DELETEORDER } from "@/api/apiConstants";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
 // Define an interface for your Auth state
@@ -106,6 +106,25 @@ export const fulFillOrdersAsync = createAsyncThunk(
       const message = error?.response?.data.message;
       console.log("🚀 ~ error:", message);
       return rejectWithValue(message ? message : "Error fulfilling orders. Please try again.");
+    }
+  }
+);
+
+export const deleteOrder = createAsyncThunk(
+  "order/delete",
+  async ({ orderId }: { orderId: string; }, { rejectWithValue }) => {
+    try {
+      const response = await deleteApi(DELETEORDER.replace(":orderId", orderId), {}, {}, false);
+
+      console.log("🚀 ~ response:", response);
+
+      return;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      const message = error?.response?.data.message;
+      console.log("🚀 ~ error:", message);
+      return rejectWithValue(message ? message : "Error in Deleting order. Please try again.");
     }
   }
 );
