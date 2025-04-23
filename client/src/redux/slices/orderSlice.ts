@@ -93,6 +93,14 @@ export const getOrdersAsync = createAsyncThunk(
   }
 );
 
+export const fulFillOrdersAsync = createAsyncThunk(
+  "order/fullfill",
+  async ({ orderIds }: { orderIds: string[]; }) => {
+    console.log(orderIds);
+
+  }
+);
+
 export const getOrderById = createAsyncThunk(
   "order/getById",
   async ({ _id }: { _id: string; }, { rejectWithValue }) => {

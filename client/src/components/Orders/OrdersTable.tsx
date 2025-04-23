@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/table";
 import { formatDate } from "@/lib/utils";
 import { Checkbox } from "../ui/checkbox";
+import { Badge } from "../ui/badge";
 
 export type Order = {
   _id: string;
@@ -49,6 +50,7 @@ export type Order = {
   comments: string;
   deliveryDate: Date | null;
   poNumber: string;
+  isDeleted: boolean;
 };
 
 export function OrdersTable(props: {
@@ -99,6 +101,26 @@ export function OrdersTable(props: {
             );
           },
           cell: ({ row }) => <div className="ms-4">{row.getValue("orderNo")}</div>,
+        },
+        {
+          accessorKey: "isDeleted",
+          header: () => {
+            return (
+              <Button
+                variant="ghost"
+                className="flex items-center gap-2"
+              >
+                Status
+              </Button>
+            );
+          },
+          cell: ({ row }) => {
+            const variant = row.getValue("isDeleted") ? "fulfilled" : "processing";
+            const text = row.getValue("isDeleted") ? "Full filled" : "Processing";
+            return (
+              <Badge variant={variant}>{text}</Badge>
+            );
+          },
         },
         {
           accessorKey: "poNumber",

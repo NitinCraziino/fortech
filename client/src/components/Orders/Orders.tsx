@@ -7,9 +7,10 @@ import { Pagination } from "../Pagination/Pagination";
 import { OrdersTable } from "./OrdersTable";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
-import { exportOrderAsync, getAllOrders, getOrdersAsync } from "@/redux/slices/orderSlice";
+import { exportOrderAsync, getAllOrders, getOrdersAsync, fulFillOrdersAsync } from "@/redux/slices/orderSlice";
 import { Input } from "../ui/input";
 import { Spinner } from "../ui/spinner";
+import { FulfillOrdersDialog } from "../modals/FulfillOrdersDialog";
 
 export type Order = {
   _id: string;
@@ -33,14 +34,16 @@ export type Order = {
   comments: string;
   deliveryDate: Date | null;
   poNumber: string;
+  isDeleted: boolean;
 };
 
 const Orders: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const [filterText, setFilterText] = useState("");
-    const [isAllSelected, setAllSelected] = useState(false);
-    const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [isAllSelected, setAllSelected] = useState(false);
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [isFulfillDialogOpen, setIsFulfillDialogOpen] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { user } = useSelector((state: any) => state.auth);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -56,6 +59,10 @@ const Orders: React.FC = () => {
   }, [user]);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(30);
+
+  const handleFulfillOrders = (orderIds: string[]) => {
+    dispatch(fulFillOrdersAsync({ orderIds }));
+  };
 
   return (
     <div className="p-6">
@@ -79,9 +86,14 @@ const Orders: React.FC = () => {
           </Button>
         )}
         {user.admin && selectedOrders.length > 0 && (
-          <Button onClick={() => dispatch(exportOrderAsync({orderIds: selectedOrders}))} className="px-[22px] ml-auto">
-            Export Orders
-          </Button>
+          <>
+            <Button onClick={() => dispatch(exportOrderAsync({ orderIds: selectedOrders }))} className="px-[22px] ml-auto">
+              Export Orders
+            </Button>
+            <Button onClick={() => setIsFulfillDialogOpen(true)} className="px-[22px] ml-auto">
+              Fulfill Orders
+            </Button>
+          </>
         )}
       </div>
       <div className="relative">
@@ -127,6 +139,13 @@ const Orders: React.FC = () => {
           }}
         />
       </div>
+      <FulfillOrdersDialog
+        isOpen={isFulfillDialogOpen}
+        setOpen={setIsFulfillDialogOpen}
+        selectedOrders={selectedOrders}
+        onConfirm={handleFulfillOrders}
+        isLoading={loading}
+      />
     </div>
   );
 };
