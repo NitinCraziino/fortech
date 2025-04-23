@@ -25,3 +25,4 @@ export const TOGGLETAXSETTING = "/user/toggleTaxSetting";
 export const GETCUSTOMER = "/user/getCustomer/:id";
 export const TOGGLEPRODUCTTAXSTATUS = "/product/toggleTaxSetting";
 export const TOGGLECUSTOMERPRODUCTTAXSTATUS = "/user/toggleTaxSetting";
+export const FULFILLORDERS = "/order/fulfill";

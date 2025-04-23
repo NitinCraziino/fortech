@@ -60,8 +60,10 @@ const Orders: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(30);
 
-  const handleFulfillOrders = (orderIds: string[]) => {
-    dispatch(fulFillOrdersAsync({ orderIds }));
+  const handleFulfillOrders = async (orderIds: string[]) => {
+    if (!user.admin) return;
+    await dispatch(fulFillOrdersAsync({ orderIds }));
+    dispatch(getAllOrders({}));
   };
 
   return (
@@ -90,9 +92,11 @@ const Orders: React.FC = () => {
             <Button onClick={() => dispatch(exportOrderAsync({ orderIds: selectedOrders }))} className="px-[22px] ml-auto">
               Export Orders
             </Button>
-            <Button onClick={() => setIsFulfillDialogOpen(true)} className="px-[22px] ml-auto">
-              Fulfill Orders
-            </Button>
+            {user.admin && (
+              <Button onClick={() => setIsFulfillDialogOpen(true)} className="px-[22px] ml-auto">
+                Fulfill Orders
+              </Button>
+            )}
           </>
         )}
       </div>
