@@ -128,6 +128,16 @@ const getOrderHistory = async (req, res) => {
   }
 };
 
+const fulfillOrders = async (req, res) => {
+  try {
+    await Order.updateMany({_id: {$in: req.body.orderIds}}, {isDeleted: true});
+
+    res.status(200).json({message: "Orders Fulfilled"})
+  } catch (error) {
+    res.status(500).json({error: error.message || "Error in fulfilling Orders"})
+  }
+};
+
 const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find()
@@ -237,4 +247,5 @@ module.exports = {
   getOrderById,
   getAllOrders,
   exportOrders,
+  fulfillOrders
 };

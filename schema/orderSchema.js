@@ -49,6 +49,10 @@ const OrderSchema = new mongoose.Schema(
       required: false,
     },
     deliveryDate: String,
+    isDeleted: {
+      type: Boolean,
+      default: false
+    }
   },
   {timestamps: true}
 );
