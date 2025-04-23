@@ -86,3 +86,7 @@ export const postApi = (url: string, data = {}, config = {}, formData: boolean) 
 export const putApi = (url: string, data = {}, config = {}, formData: boolean) => {
   return apiCall("PUT", `${url}`, data, config, formData);
 };
+
+export const deleteApi = (url: string, data = {}, config = {}, formData: boolean) => {
+  return apiCall("DELETE", `${url}`, data, config, formData);
+};

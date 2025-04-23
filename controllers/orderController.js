@@ -128,9 +128,41 @@ const getOrderHistory = async (req, res) => {
   }
 };
 
+const fulfillOrders = async (req, res) => {
+  try {
+    await Order.updateMany({_id: {$in: req.body.orderIds}}, {status: "Fulfilled"});
+
+    res.status(200).json({message: "Orders Fulfilled"})
+  } catch (error) {
+    res.status(500).json({error: error.message || "Error in fulfilling Orders"})
+  }
+};
+
+const deleteOrder = async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+
+    const order = await Order.findById(orderId).lean();
+    if (!order || !order.status === 'Fulfilled') {
+      return res.status(400).json({error: "Invalid or not fulfilled order"})
+    }
+
+    await Order.findByIdAndUpdate(orderId, {isDeleted: true});
+
+    res.status(200).json({message: "Order deleted successfully"})
+  } catch (error) {
+    res.status(500).json({error: error.message || "Error in Deleting Order"})
+  }
+}
+
 const getAllOrders = async (req, res) => {
   try {
-    const orders = await Order.find()
+    const orders = await Order.find({
+      $or: [
+        {isDeleted: {$exists: false}},
+        {isDeleted: false}
+      ]
+    })
       .sort({createdAt: -1})
       .populate({
         path: "products.productId", // Populate product details (Product schema)
@@ -237,4 +269,6 @@ module.exports = {
   getOrderById,
   getAllOrders,
   exportOrders,
+  fulfillOrders,
+  deleteOrder
 };
