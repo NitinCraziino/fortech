@@ -12,6 +12,7 @@ import { Input } from "../ui/input";
 import { Spinner } from "../ui/spinner";
 import { FulfillOrdersDialog } from "../modals/FulfillOrdersDialog";
 import { ConfirmDeleteOrder } from "../modals/ComfirmDeleteOrder";
+import { useToast } from "@/hooks/use-toast";
 
 export type Order = {
   _id: string;
@@ -61,17 +62,27 @@ const Orders: React.FC = () => {
   }, [user]);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(30);
+  const { toast } = useToast();
 
   const handleFulfillOrders = async (orderIds: string[]) => {
     if (!user.admin) return;
     await dispatch(fulFillOrdersAsync({ orderIds }));
     await dispatch(getAllOrders({}));
+    const title = orderIds.length > 1 ? "Orders fulfilled successfully" : "Order fulfilled successfully";
+    toast({
+      title: title,
+      variant: "success",
+    });
   };
 
   const handleDelete = async () => {
     if (!user.admin || !deletingOrder) return;
     await dispatch(deleteOrder({ orderId: deletingOrder }));
     await dispatch(getAllOrders({}));
+    toast({
+      title: "Order Deleted successfully",
+      variant: "success",
+    });
   };
 
   return (
