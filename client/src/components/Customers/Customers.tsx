@@ -6,7 +6,7 @@ import React, { useEffect, useState } from "react";
 import { CustomersTable } from "./CustomersTable";
 import { InviteCustomerModal } from "../modals/InviteCustomerModal";
 import { useDispatch, useSelector } from "react-redux";
-import { getCustomersAsync, inviteCustomerAsync } from "@/redux/slices/customerSlice";
+import { getCustomersAsync, inviteCustomerAsync, updateCustomerNameAsync } from "@/redux/slices/customerSlice";
 import { AppDispatch } from "@/store";
 import { useToastActions } from "@/lib/utils";
 import { Spinner } from "../ui/spinner";
@@ -44,6 +44,16 @@ const Customers: React.FC = () => {
     }
   };
 
+  const updateCustomerName = async (customerId: string, newName: string) => {
+    try {
+      await dispatch(updateCustomerNameAsync({ customerId, newName })).unwrap();
+      dispatch(getCustomersAsync({}));
+      success("Customer Name has updateSuccessfully");
+    } catch (error) {
+      console.log("🚀 ~ updateCustomerName ~ error:", error);
+    }
+  }
+
   return (
     <>
       <div className="p-6">
@@ -66,7 +76,7 @@ const Customers: React.FC = () => {
           </div>
         </div>
         <div className="relative">
-          <CustomersTable  pageIndex={currentPage} pageSize={rowsPerPage} customers={customers} />
+          <CustomersTable pageIndex={currentPage} pageSize={rowsPerPage} customers={customers} onUpdateName={updateCustomerName} />
           <Pagination
             currentPage={currentPage}
             totalPages={Math.ceil(customers.length / rowsPerPage)}

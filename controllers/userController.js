@@ -228,6 +228,22 @@ const deleteCustomerProduct = async (req, res) => {
   }
 }
 
+const updateCustomerName = async (req, res) => {
+  try {
+    if (!req.user.admin) return res.status(400).json({error: "Invalid Permissions"});
+    const {newName} = req.body;
+    const customerId = req.params.id;
+
+    if (typeof newName !== "string" || newName.trim() === "") return res.status(400).json({error: "newName is required"});
+
+    await User.findByIdAndUpdate(customerId, {name: newName});
+
+    res.status(200).json({message: 'update name'})
+  } catch (error) {
+    res.status(500).json({error});
+  }
+}
+
 module.exports = {
   toggleTaxSetting,
   createAdmin,
@@ -235,5 +251,6 @@ module.exports = {
   setPassword,
   getCustomers,
   getCustomer,
-  deleteCustomerProduct
+  deleteCustomerProduct,
+  updateCustomerName
 };
