@@ -60,7 +60,7 @@ const apiCall = async (method: string, url: string, data = {}, config = {}, form
       url,
       headers,
       ...config,
-      ...(method.toUpperCase() === "POST" || method.toUpperCase() === "PUT" ? { data } : { params: data }),
+      ...(method.toUpperCase() === "POST" || method.toUpperCase() === "PUT" || method.toUpperCase() === "PATCH" ? { data } : { params: data }),
     };
 
     const response = await api(options);
@@ -81,6 +81,10 @@ export const getApi = (url: string, params = {}, config = {}, formData = false) 
 // POST Request
 export const postApi = (url: string, data = {}, config = {}, formData: boolean) => {
   return apiCall("POST", `${url}`, data, config, formData);
+};
+
+export const patchApi = (url: string, data = {}, config = {}, formData: boolean) => {
+  return apiCall("PATCH", `${url}`, data, config, formData);
 };
 
 export const putApi = (url: string, data = {}, config = {}, formData: boolean) => {

@@ -1,6 +1,6 @@
 // src/redux/slices/authSlice.ts
-import { getApi, postApi } from "@/api/api";
-import { INVITECUSTOMER, GETCUSTOMERS, DELETECUSTOMERPRODUCTS, TOGGLETAXSETTING, GETCUSTOMER } from "@/api/apiConstants";
+import { getApi, patchApi, postApi } from "@/api/api";
+import { INVITECUSTOMER, GETCUSTOMERS, DELETECUSTOMERPRODUCTS, TOGGLETAXSETTING, GETCUSTOMER, UPDATECUSTOMERNAME } from "@/api/apiConstants";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
 // Define an interface for your Auth state
@@ -46,6 +46,22 @@ export const inviteCustomerAsync = createAsyncThunk(
     }
   }
 );
+
+export const updateCustomerNameAsync = createAsyncThunk(
+  "user/updateName",
+  async ({ customerId, newName }: { customerId: string, newName: string; }, { rejectWithValue }) => {
+    try {
+      const response = await patchApi(UPDATECUSTOMERNAME.replace(':id', customerId), { newName }, {}, false);
+
+      return response;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      const message = error?.response?.data.message;
+      console.log("🚀 ~ error:", error.response.data.message);
+      return rejectWithValue(message ? message : "Error updaitn customer name. Please try again.");
+    }
+  }
+)
 
 export const updateCustomerTaxStatusAsync = createAsyncThunk(
   "customer/updateCustomerTaxStatus",
