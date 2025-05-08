@@ -7,6 +7,13 @@ import CustomDialog from "@/components/ui/custom-dialog";
 import { Import } from "lucide-react";
 import { Link } from "react-router-dom";
 
+interface Customer {
+  _id: string;
+  name: string;
+  email: string;
+  active: boolean;
+}
+
 interface FormData {
   email: string;
   customerName: string;
@@ -17,6 +24,7 @@ interface InviteCustomerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   inviteCustomer: (formData: FormData) => void;
+  customerToReinvite: Customer | null;
 }
 
 interface FormErrors {
@@ -28,6 +36,7 @@ export function InviteCustomerModal({
   open,
   onOpenChange,
   inviteCustomer,
+  customerToReinvite
 }: InviteCustomerModalProps) {
   const [formData, setFormData] = useState<FormData>({
     email: "",
@@ -41,6 +50,7 @@ export function InviteCustomerModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const validateField = (
     name: string,
     value: string | null | File
@@ -65,20 +75,37 @@ export function InviteCustomerModal({
     return undefined;
   };
 
+  // Reset form when modal opens/closes or when customerToReinvite changes
   useEffect(() => {
     if (!open) {
+      // Reset form when closing
       setFormData({ email: "", customerName: "", products: null });
       setErrors({ email: "", customerName: "" });
+      setTouched({});
+    } else if (customerToReinvite) {
+      // Fill form with customer data when reinviting
+      setFormData(prev => ({
+        ...prev,
+        email: customerToReinvite.email,
+        customerName: customerToReinvite.name
+      }));
+    } else {
+      // Reset form when opening for new customer
+      setFormData({ email: "", customerName: "", products: null });
+      setErrors({ email: "", customerName: "" });
+      setTouched({});
     }
-  }, [open]);
+  }, [open, customerToReinvite]);
 
   const handleSubmit = (e: React.FormEvent): void => {
     e.preventDefault();
     const newErrors: FormErrors = {};
     Object.keys(formData).forEach((key) => {
-      const error = validateField(key, formData[key as keyof FormData]);
-      if (error) {
-        newErrors[key as keyof FormErrors] = error;
+      if (key === 'email' || key === 'customerName') {
+        const error = validateField(key, formData[key as keyof FormData]);
+        if (error) {
+          newErrors[key as keyof FormErrors] = error;
+        }
       }
     });
 
@@ -86,8 +113,6 @@ export function InviteCustomerModal({
     if (Object.keys(newErrors).length === 0) {
       setIsSubmitting(true);
       try {
-        // Simulate API call
-        console.log("Form submitted:", formData);
         inviteCustomer(formData);
       } catch (error) {
         console.error("Invite error:", error);
@@ -111,7 +136,10 @@ export function InviteCustomerModal({
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    setErrors((prev) => ({ ...prev, [name]: "" }));
+    if (touched[name]) {
+      const error = validateField(name, value);
+      setErrors((prev) => ({ ...prev, [name]: error || "" }));
+    }
   };
 
   const handleButtonClick = () => {
@@ -122,9 +150,15 @@ export function InviteCustomerModal({
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFormData((prev) => ({ ...prev, products: e.target.files[0] }));
+      setFormData((prev) => ({ ...prev, products: e.target.files?.[0] || null }));
     }
   };
+
+  const modalTitle = customerToReinvite ? "Reinvite Customer" : "Invite Customer";
+  const buttonText = customerToReinvite ? "Resend Invite" : "Send Invite";
+  const description = customerToReinvite
+    ? "Update information and resend invitation to this customer"
+    : "Enter the Name & Email address whom you want to invite";
 
   return (
     <CustomDialog
@@ -132,9 +166,9 @@ export function InviteCustomerModal({
       onOpenChange={onOpenChange}
       content={
         <div>
-          <h2 className="text-lg font-semibold mb-1">Invite Customer</h2>
+          <h2 className="text-lg font-semibold mb-1">{modalTitle}</h2>
           <p className="text-[#334155] text-sm mb-5">
-            Enter the Name & Email address whom you want to invite
+            {description}
           </p>
           <input
             type="file"
@@ -195,7 +229,7 @@ export function InviteCustomerModal({
               type="submit"
               className="w-full mt-1"
             >
-              Send Invite
+              {buttonText}
             </Button>
           </form>
         </div>

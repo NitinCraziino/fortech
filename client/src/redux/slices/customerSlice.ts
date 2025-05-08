@@ -23,7 +23,7 @@ const initialState: AuthState = {
 // Create an async thunk to handle login
 export const inviteCustomerAsync = createAsyncThunk(
   "user/invite",
-  async ({ email, customerName, products }: { email: string; customerName: string, products: File | null }, { rejectWithValue }) => {
+  async ({ email, customerName, products, customerId }: { email: string; customerName: string, products: File | null, customerId?: string; }, { rejectWithValue }) => {
     console.log("🚀 ~ products:", products)
     try {
       const formData = new FormData();
@@ -31,6 +31,9 @@ export const inviteCustomerAsync = createAsyncThunk(
       formData.append("customerName", customerName);
       if(products) {
         formData.append("products", products);
+      }
+      if (customerId) {
+        formData.append("customerId", customerId);
       }
       const response = await postApi(INVITECUSTOMER, formData, {}, true);
       // Assuming the response contains user data and token

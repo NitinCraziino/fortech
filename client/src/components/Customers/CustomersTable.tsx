@@ -13,11 +13,10 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronsUpDown, Eye, PencilIcon, CheckCircle, XCircle } from "lucide-react";
+import { ChevronsUpDown, Eye, PencilIcon, CheckCircle, XCircle, MailIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
 import {
   Table,
   TableBody,
@@ -29,14 +28,13 @@ import {
 import { useNavigate } from "react-router-dom";
 
 
-export interface Customer  {
+export interface Customer {
   _id: string;
   name: string;
-  status: "Active" | "Inactive";
+  active: boolean;
   email: string;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function CustomersTable(props: any) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -70,6 +68,12 @@ export function CustomersTable(props: any) {
     setEditingCustomerId(null);
     setEditName("");
     setEditEmail("");
+  };
+
+  const handleReinviteCustomer = (customerId: string) => {
+    if (props.onReinviteCustomer) {
+      props.onReinviteCustomer(customerId);
+    }
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,10 +161,26 @@ export function CustomersTable(props: any) {
       },
       {
         accessorKey: "active",
-        header: "Status",
-        cell: ({ row }) => (
-          <div className="capitalize">{row.getValue("active") ? 'Active': 'Inactive'}</div>
-        ),
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+              className="flex items-center gap-2"
+            >
+              Status
+              <ChevronsUpDown size={14} />
+            </Button>
+          );
+        },
+        cell: ({ row }) => {
+          const isActive = row.original.active;
+          return (
+            <div className={`capitalize font-medium`}>
+              {isActive ? 'Active' : 'Inactive'}
+            </div>
+          );
+        },
       },
       {
         id: "actions",
@@ -211,6 +231,17 @@ export function CustomersTable(props: any) {
               >
                 <PencilIcon className="h-4 w-4" />
               </Button>
+              {!customer.active && (
+                <Button
+                  onClick={() => handleReinviteCustomer(customer._id)}
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                >
+                  <MailIcon className="h-4 w-4 text-blue-600" />
+                  <span className="sr-only">Resend Customer</span>
+                </Button>
+              )}
             </div>
           );
         },
@@ -252,9 +283,9 @@ export function CustomersTable(props: any) {
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   );
                 })}
