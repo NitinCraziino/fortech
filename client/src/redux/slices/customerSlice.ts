@@ -1,6 +1,6 @@
 // src/redux/slices/authSlice.ts
 import { getApi, patchApi, postApi } from "@/api/api";
-import { INVITECUSTOMER, GETCUSTOMERS, DELETECUSTOMERPRODUCTS, TOGGLETAXSETTING, GETCUSTOMER, UPDATECUSTOMERNAME } from "@/api/apiConstants";
+import { INVITECUSTOMER, GETCUSTOMERS, DELETECUSTOMERPRODUCTS, TOGGLETAXSETTING, GETCUSTOMER, UPDATECUSTOMERNAMEANDEMAIL } from "@/api/apiConstants";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
 // Define an interface for your Auth state
@@ -47,11 +47,11 @@ export const inviteCustomerAsync = createAsyncThunk(
   }
 );
 
-export const updateCustomerNameAsync = createAsyncThunk(
+export const updateCustomerNameAndEmailAsync = createAsyncThunk(
   "user/updateName",
-  async ({ customerId, newName }: { customerId: string, newName: string; }, { rejectWithValue }) => {
+  async ({ customerId, newName, newEmail }: { customerId: string, newName: string; newEmail: string; }, { rejectWithValue }) => {
     try {
-      const response = await patchApi(UPDATECUSTOMERNAME.replace(':id', customerId), { newName }, {}, false);
+      const response = await patchApi(UPDATECUSTOMERNAMEANDEMAIL.replace(':id', customerId), { newName, newEmail }, {}, false);
 
       return response;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -200,6 +200,21 @@ const customerSlice = createSlice({
         state.error = null;
       })
       .addCase(updateCustomerTaxStatusAsync.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    builder
+      .addCase(updateCustomerNameAndEmailAsync.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+      });
+    builder
+      .addCase(updateCustomerNameAndEmailAsync.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateCustomerNameAndEmailAsync.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

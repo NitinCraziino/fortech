@@ -228,17 +228,31 @@ const deleteCustomerProduct = async (req, res) => {
   }
 }
 
-const updateCustomerName = async (req, res) => {
+const updateCustomerNameAndEmail = async (req, res) => {
   try {
     if (!req.user.admin) return res.status(400).json({error: "Invalid Permissions"});
-    const {newName} = req.body;
+    const {newName, newEmail} = req.body;
     const customerId = req.params.id;
 
-    if (typeof newName !== "string" || newName.trim() === "") return res.status(400).json({error: "newName is required"});
+    if (typeof newName !== "string" || newName.trim() === "") {
+      return res.status(400).json({error: "newName is required."});
+    }
 
-    await User.findByIdAndUpdate(customerId, {name: newName});
+    if (typeof newEmail !== "string" || newEmail.trim() === "") {
+      return res.status(400).json({error: "newEmail is required."});
+    }
 
-    res.status(200).json({message: 'update name'})
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      return res.status(400).json({error: "Invalid email format"});
+    }
+
+    await User.findByIdAndUpdate(customerId, {
+      name: newName,
+      email: newEmail,
+    });
+
+    res.status(200).json({message: 'Customer name and email updated successfully'});
   } catch (error) {
     res.status(500).json({error});
   }
@@ -252,5 +266,5 @@ module.exports = {
   getCustomers,
   getCustomer,
   deleteCustomerProduct,
-  updateCustomerName
+  updateCustomerNameAndEmail
 };

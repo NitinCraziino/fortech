@@ -6,7 +6,7 @@ import React, { useEffect, useState } from "react";
 import { CustomersTable } from "./CustomersTable";
 import { InviteCustomerModal } from "../modals/InviteCustomerModal";
 import { useDispatch, useSelector } from "react-redux";
-import { getCustomersAsync, inviteCustomerAsync, updateCustomerNameAsync } from "@/redux/slices/customerSlice";
+import { getCustomersAsync, inviteCustomerAsync, updateCustomerNameAndEmailAsync } from "@/redux/slices/customerSlice";
 import { AppDispatch } from "@/store";
 import { useToastActions } from "@/lib/utils";
 import { Spinner } from "../ui/spinner";
@@ -44,13 +44,13 @@ const Customers: React.FC = () => {
     }
   };
 
-  const updateCustomerName = async (customerId: string, newName: string) => {
+  const updateCustomerNameAndEmail = async (customerId: string, newName: string, newEmail: string) => {
     try {
-      await dispatch(updateCustomerNameAsync({ customerId, newName })).unwrap();
+      await dispatch(updateCustomerNameAndEmailAsync({ customerId, newName, newEmail })).unwrap();
       dispatch(getCustomersAsync({}));
       success("Customer Name has updateSuccessfully");
     } catch (error) {
-      console.log("🚀 ~ updateCustomerName ~ error:", error);
+      console.log("🚀 ~ updateCustomerNameAndEmail ~ error:", error);
     }
   }
 
@@ -76,7 +76,7 @@ const Customers: React.FC = () => {
           </div>
         </div>
         <div className="relative">
-          <CustomersTable pageIndex={currentPage} pageSize={rowsPerPage} customers={customers} onUpdateName={updateCustomerName} />
+          <CustomersTable pageIndex={currentPage} pageSize={rowsPerPage} customers={customers} onUpdateNameAndEmail={updateCustomerNameAndEmail} />
           <Pagination
             currentPage={currentPage}
             totalPages={Math.ceil(customers.length / rowsPerPage)}
