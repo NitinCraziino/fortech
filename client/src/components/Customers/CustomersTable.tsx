@@ -13,11 +13,10 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronsUpDown, Eye, PencilIcon, CheckCircle, XCircle } from "lucide-react";
+import { ChevronsUpDown, Eye, PencilIcon, CheckCircle, XCircle, MailIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
 import {
   Table,
   TableBody,
@@ -29,14 +28,13 @@ import {
 import { useNavigate } from "react-router-dom";
 
 
-export interface Customer  {
+export interface Customer {
   _id: string;
   name: string;
-  status: "Active" | "Inactive";
+  active: boolean;
   email: string;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function CustomersTable(props: any) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -48,31 +46,50 @@ export function CustomersTable(props: any) {
   const navigate = useNavigate();
   const [editingCustomerId, setEditingCustomerId] = React.useState<string | null>(null);
   const [editName, setEditName] = React.useState("");
-  const inputRef = React.useRef<HTMLInputElement>(null);
+  const [editEmail, setEditEmail] = React.useState("");
+  const nameInputRef = React.useRef<HTMLInputElement>(null);
+  const emailInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleEditClick = (customer: Customer) => {
     setEditingCustomerId(customer._id);
     setEditName(customer.name);
+    setEditEmail(customer.email);
   };
 
   const handleCancelEdit = () => {
     setEditingCustomerId(null);
     setEditName("");
+    setEditEmail("");
   };
 
   const handleSaveEdit = (customerId: string) => {
-    if (editName.trim())
-      props.onUpdateName(customerId, editName);
+    if (editName.trim() && editEmail.trim())
+      props.onUpdateNameAndEmail(customerId, editName, editEmail);
     setEditingCustomerId(null);
     setEditName("");
+    setEditEmail("");
+  };
+
+  const handleReinviteCustomer = (customerId: string) => {
+    if (props.onReinviteCustomer) {
+      props.onReinviteCustomer(customerId);
+    }
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.value) return;
     setEditName(e.target.value);
     setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
+      if (nameInputRef.current) {
+        nameInputRef.current.focus();
+      }
+    }, 0);
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditEmail(e.target.value);
+    setTimeout(() => {
+      if (emailInputRef.current) {
+        emailInputRef.current.focus();
       }
     }, 0);
   };
@@ -99,7 +116,7 @@ export function CustomersTable(props: any) {
             return (
               <div className="ms-4">
                 <Input
-                  ref={inputRef}
+                  ref={nameInputRef}
                   value={editName}
                   onChange={handleNameChange}
                   className="w-full"
@@ -125,14 +142,45 @@ export function CustomersTable(props: any) {
             </Button>
           );
         },
-        cell: ({ row }) => <div className="lowercase">{row.getValue("email")}</div>,
+        cell: ({ row }) => {
+          const customer = row.original;
+          if (editingCustomerId === customer._id) {
+            return (
+              <div>
+                <Input
+                  ref={emailInputRef}
+                  value={editEmail}
+                  onChange={handleEmailChange}
+                  className="w-full"
+                />
+              </div>
+            );
+          }
+          return <div className="lowercase">{row.getValue("email")}</div>;
+        },
       },
       {
         accessorKey: "active",
-        header: "Status",
-        cell: ({ row }) => (
-          <div className="capitalize">{row.getValue("active") ? 'Active': 'Inactive'}</div>
-        ),
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+              className="flex items-center gap-2"
+            >
+              Status
+              <ChevronsUpDown size={14} />
+            </Button>
+          );
+        },
+        cell: ({ row }) => {
+          const isActive = row.original.active;
+          return (
+            <div className={`capitalize font-medium`}>
+              {isActive ? 'Active' : 'Inactive'}
+            </div>
+          );
+        },
       },
       {
         id: "actions",
@@ -183,6 +231,17 @@ export function CustomersTable(props: any) {
               >
                 <PencilIcon className="h-4 w-4" />
               </Button>
+              {!customer.active && (
+                <Button
+                  onClick={() => handleReinviteCustomer(customer._id)}
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                >
+                  <MailIcon className="h-4 w-4 text-blue-600" />
+                  <span className="sr-only">Resend Customer</span>
+                </Button>
+              )}
             </div>
           );
         },
@@ -224,9 +283,9 @@ export function CustomersTable(props: any) {
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   );
                 })}

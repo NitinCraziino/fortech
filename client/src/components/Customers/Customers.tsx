@@ -6,24 +6,35 @@ import React, { useEffect, useState } from "react";
 import { CustomersTable } from "./CustomersTable";
 import { InviteCustomerModal } from "../modals/InviteCustomerModal";
 import { useDispatch, useSelector } from "react-redux";
-import { getCustomersAsync, inviteCustomerAsync, updateCustomerNameAsync } from "@/redux/slices/customerSlice";
+import { getCustomersAsync, inviteCustomerAsync, updateCustomerNameAndEmailAsync } from "@/redux/slices/customerSlice";
 import { AppDispatch } from "@/store";
 import { useToastActions } from "@/lib/utils";
 import { Spinner } from "../ui/spinner";
 import { Pagination } from "../Pagination/Pagination";
+
 interface FormData {
   email: string;
   customerName: string;
-  products: File | null
+  products: File | null;
 }
+
+interface Customer {
+  _id: string;
+  name: string;
+  email: string;
+  active: boolean;
+}
+
 const Customers: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const { errorToast, success } = useToastActions();
   const dispatch = useDispatch<AppDispatch>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { customers, error, loading } = useSelector((state: any) => state.customer);
+
   useEffect(() => {
     dispatch(getCustomersAsync({}));
   }, []);
@@ -36,23 +47,49 @@ const Customers: React.FC = () => {
 
   const handleInviteCustomer = async (formData: FormData) => {
     try {
-      await dispatch(inviteCustomerAsync(formData)).unwrap();
+      if (selectedCustomer) {
+        await dispatch(inviteCustomerAsync({ ...formData, customerId: selectedCustomer._id })).unwrap();
+        success("Reinvitation sent successfully.");
+      } else {
+        await dispatch(inviteCustomerAsync(formData)).unwrap();
+        success("Invitation sent successfully.");
+      }
       setIsDialogOpen(false);
-      success("Invitation sent.");
+      setSelectedCustomer(null);
     } catch (error) {
       console.log("🚀 ~ handleInviteCustomer ~ error:", error);
     }
   };
 
-  const updateCustomerName = async (customerId: string, newName: string) => {
+  const updateCustomerNameAndEmail = async (customerId: string, newName: string, newEmail: string) => {
     try {
-      await dispatch(updateCustomerNameAsync({ customerId, newName })).unwrap();
+      await dispatch(updateCustomerNameAndEmailAsync({ customerId, newName, newEmail })).unwrap();
       dispatch(getCustomersAsync({}));
-      success("Customer Name has updateSuccessfully");
+      success("Customer updated successfully");
     } catch (error) {
-      console.log("🚀 ~ updateCustomerName ~ error:", error);
+      console.log("🚀 ~ updateCustomerNameAndEmail ~ error:", error);
     }
-  }
+  };
+
+  const handleReinviteCustomer = (customerId: string) => {
+    const customer = customers.find((c: Customer) => c._id === customerId);
+    if (customer) {
+      setSelectedCustomer(customer);
+      setIsDialogOpen(true);
+    }
+  };
+
+  const handleOpenInviteModal = () => {
+    setSelectedCustomer(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseModal = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setSelectedCustomer(null);
+    }
+  };
 
   return (
     <>
@@ -70,13 +107,19 @@ const Customers: React.FC = () => {
             </div>
           </div>
           <div>
-            <Button size="lg" className="px-[22px]" onClick={() => setIsDialogOpen(true)}>
+            <Button size="lg" className="px-[22px]" onClick={handleOpenInviteModal}>
               Invite Customer
             </Button>
           </div>
         </div>
         <div className="relative">
-          <CustomersTable pageIndex={currentPage} pageSize={rowsPerPage} customers={customers} onUpdateName={updateCustomerName} />
+          <CustomersTable
+            pageIndex={currentPage}
+            pageSize={rowsPerPage}
+            customers={customers}
+            onUpdateNameAndEmail={updateCustomerNameAndEmail}
+            onReinviteCustomer={handleReinviteCustomer}
+          />
           <Pagination
             currentPage={currentPage}
             totalPages={Math.ceil(customers.length / rowsPerPage)}
@@ -89,12 +132,14 @@ const Customers: React.FC = () => {
           />
         </div>
       </div>
-
-      <InviteCustomerModal
-        inviteCustomer={handleInviteCustomer}
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-      />
+      {isDialogOpen && (
+        <InviteCustomerModal
+          inviteCustomer={handleInviteCustomer}
+          open={isDialogOpen}
+          onOpenChange={handleCloseModal}
+          customerToReinvite={selectedCustomer}
+        />
+      )}
     </>
   );
 };

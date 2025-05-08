@@ -65,35 +65,50 @@ const createAdmin = async (req, res) => {
 
 const inviteCustomer = async (req, res) => {
   try {
-    const normalizedEmail = req.body.email.toLowerCase();
-    // Check if the email already exists
-    const existingUser = await User.findOne({ email: normalizedEmail });
-    if (existingUser) {
-      res.status(400).json({ error: "Email already in use." });
+    let savedUser;
+
+    if (req.body.customerId) {
+      savedUser = await User.findById(req.body.customerId).select("-password");
+
+      if (!savedUser) {
+        return res.status(404).json({error: "Customer not found."});
+      }
+    } else {
+      const normalizedEmail = req.body.email.toLowerCase();
+
+      const existingUser = await User.findOne({email: normalizedEmail});
+      if (existingUser) {
+        return res.status(400).json({error: "Email already in use."});
+      }
+
+      const newUser = new User({
+        name: req.body.customerName,
+        email: normalizedEmail,
+        admin: false,
+        active: false,
+      });
+
+      savedUser = await newUser.save();
+
+      if (req.file && req.file.path) {
+        processCsv(req.file.path, savedUser._id);
+      }
     }
-    // Hash the password
-    const newUser = new User({
-      name: req.body.customerName,
-      email: normalizedEmail,
-      admin: false,
-      active: false,
-    });
-    const savedUser = await newUser.save();
+
     const emailTemplate = await EmailTemplate.findOne({type: "INVITE CUSTOMER"}).lean().exec();
     
     sendEmail({
-      to: normalizedEmail,
+      to: savedUser.email,
       from: "brian@naisupply.com",
       subject: emailTemplate.subject,
-      html: emailTemplate.body.replace('[username]', savedUser.name).replace('[SETPASSWORDLINK]', `https://www.naisorders.com/set-password/${savedUser._id}`),
+      html: emailTemplate.body
+        .replace('[username]', savedUser.name)
+        .replace('[SETPASSWORDLINK]', `https://www.naisorders.com/set-password/${savedUser._id}`),
     });
-    const customerId = savedUser._id;
-    if(req.file && req.file.path) {
-      processCsv(req.file.path, customerId);
-    }
+
     res.status(200).json({ customer: savedUser });
   } catch (error) {
-    res.status(500).json({ error: error.message || "Error creating user" });
+    res.status(500).json({error: error.message || "Error processing customer invitation"});
   }
 };
 
@@ -228,17 +243,31 @@ const deleteCustomerProduct = async (req, res) => {
   }
 }
 
-const updateCustomerName = async (req, res) => {
+const updateCustomerNameAndEmail = async (req, res) => {
   try {
     if (!req.user.admin) return res.status(400).json({error: "Invalid Permissions"});
-    const {newName} = req.body;
+    const {newName, newEmail} = req.body;
     const customerId = req.params.id;
 
-    if (typeof newName !== "string" || newName.trim() === "") return res.status(400).json({error: "newName is required"});
+    if (typeof newName !== "string" || newName.trim() === "") {
+      return res.status(400).json({error: "newName is required."});
+    }
 
-    await User.findByIdAndUpdate(customerId, {name: newName});
+    if (typeof newEmail !== "string" || newEmail.trim() === "") {
+      return res.status(400).json({error: "newEmail is required."});
+    }
 
-    res.status(200).json({message: 'update name'})
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      return res.status(400).json({error: "Invalid email format"});
+    }
+
+    await User.findByIdAndUpdate(customerId, {
+      name: newName,
+      email: newEmail,
+    });
+
+    res.status(200).json({message: 'Customer name and email updated successfully'});
   } catch (error) {
     res.status(500).json({error});
   }
@@ -252,5 +281,5 @@ module.exports = {
   getCustomers,
   getCustomer,
   deleteCustomerProduct,
-  updateCustomerName
+  updateCustomerNameAndEmail
 };

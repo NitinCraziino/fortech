@@ -1,6 +1,6 @@
 // src/redux/slices/authSlice.ts
 import { getApi, patchApi, postApi } from "@/api/api";
-import { INVITECUSTOMER, GETCUSTOMERS, DELETECUSTOMERPRODUCTS, TOGGLETAXSETTING, GETCUSTOMER, UPDATECUSTOMERNAME } from "@/api/apiConstants";
+import { INVITECUSTOMER, GETCUSTOMERS, DELETECUSTOMERPRODUCTS, TOGGLETAXSETTING, GETCUSTOMER, UPDATECUSTOMERNAMEANDEMAIL } from "@/api/apiConstants";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
 // Define an interface for your Auth state
@@ -23,7 +23,7 @@ const initialState: AuthState = {
 // Create an async thunk to handle login
 export const inviteCustomerAsync = createAsyncThunk(
   "user/invite",
-  async ({ email, customerName, products }: { email: string; customerName: string, products: File | null }, { rejectWithValue }) => {
+  async ({ email, customerName, products, customerId }: { email: string; customerName: string, products: File | null, customerId?: string; }, { rejectWithValue }) => {
     console.log("🚀 ~ products:", products)
     try {
       const formData = new FormData();
@@ -31,6 +31,9 @@ export const inviteCustomerAsync = createAsyncThunk(
       formData.append("customerName", customerName);
       if(products) {
         formData.append("products", products);
+      }
+      if (customerId) {
+        formData.append("customerId", customerId);
       }
       const response = await postApi(INVITECUSTOMER, formData, {}, true);
       // Assuming the response contains user data and token
@@ -47,11 +50,11 @@ export const inviteCustomerAsync = createAsyncThunk(
   }
 );
 
-export const updateCustomerNameAsync = createAsyncThunk(
+export const updateCustomerNameAndEmailAsync = createAsyncThunk(
   "user/updateName",
-  async ({ customerId, newName }: { customerId: string, newName: string; }, { rejectWithValue }) => {
+  async ({ customerId, newName, newEmail }: { customerId: string, newName: string; newEmail: string; }, { rejectWithValue }) => {
     try {
-      const response = await patchApi(UPDATECUSTOMERNAME.replace(':id', customerId), { newName }, {}, false);
+      const response = await patchApi(UPDATECUSTOMERNAMEANDEMAIL.replace(':id', customerId), { newName, newEmail }, {}, false);
 
       return response;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -200,6 +203,21 @@ const customerSlice = createSlice({
         state.error = null;
       })
       .addCase(updateCustomerTaxStatusAsync.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    builder
+      .addCase(updateCustomerNameAndEmailAsync.fulfilled, (state, action) => {
+        state.loading = false;
+        state.error = null;
+      });
+    builder
+      .addCase(updateCustomerNameAndEmailAsync.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateCustomerNameAndEmailAsync.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

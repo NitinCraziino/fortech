@@ -1,7 +1,7 @@
 export const LOGIN: string = "/auth/login";
 export const INVITECUSTOMER: string = "/user/inviteCustomer";
 export const GETCUSTOMERS: string = "/user/getCustomers";
-export const UPDATECUSTOMERNAME = '/user/updateName/:id';
+export const UPDATECUSTOMERNAMEANDEMAIL = '/user/updateNameAndEmail/:id';
 export const CREATEPRODUCT: string = "/product/create";
 export const GETALLPRODUCTS: string = "/product/get";
 export const GETCUSTOMERPRICES: string = "/product/getCustomerPrices";
