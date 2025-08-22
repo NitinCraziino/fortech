@@ -12,7 +12,9 @@ const {
   bulkUpdatePrice,
   importCustomerProducts,
   assignProductsToCustomers,
-  toggleProductTaxStatus
+  toggleProductTaxStatus,
+  toggleCustomerProductFavoriteStatus,
+  bulkToggleCustomerProductFavoriteStatus
 } = require("../controllers/productController");
 const upload = require("../helpers/multerConfig");
 const router = express.Router();
@@ -29,5 +31,7 @@ router.post("/bulkUpdatePrice", jwtAuthMiddleware, upload.single("prices"), bulk
 router.post("/importCustomerProducts", jwtAuthMiddleware, upload.single("products"), importCustomerProducts)
 router.post("/assignToCustomers", jwtAuthMiddleware, assignProductsToCustomers);
 router.put("/toggleTaxSetting", jwtAuthMiddleware, toggleProductTaxStatus);
+router.put("/toggleCustomerProductFavorite", jwtAuthMiddleware, toggleCustomerProductFavoriteStatus);
+router.put("/toggleBulkCustomerProductFavorite", jwtAuthMiddleware, bulkToggleCustomerProductFavoriteStatus);
 
 module.exports = router;

@@ -16,6 +16,7 @@ export interface Product {
 export interface CustomerProduct extends Product {
   customerPrice: number;
   customerPriceId: string;
+  isFavorite: boolean;
 }
 
 export interface ProductState {
