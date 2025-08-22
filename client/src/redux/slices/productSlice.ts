@@ -14,6 +14,8 @@ import {
   ASSIGNPRODUCTSTOCUSTOMERS,
   TOGGLEPRODUCTTAXSTATUS,
   TOGGLECUSTOMERPRODUCTTAXSTATUS,
+  TOGGLEBULKCUSTOMERPRODUCTFAVORITESTATUS,
+  TOGGLECUSTOMERPRODUCTFAVORITESTATUS,
 } from "@/api/apiConstants";
 import { BulkAssignPayload } from "@/types/product";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
@@ -330,8 +332,6 @@ export const updateCustomerPriceAsync = createAsyncThunk(
   }
 );
 
-
-
 export const assignProductsToCustomersAsync = createAsyncThunk(
   "product/assignProductsToCustomers",
   async (payload: BulkAssignPayload) => {
@@ -339,6 +339,33 @@ export const assignProductsToCustomersAsync = createAsyncThunk(
     return response;
   }
 );
+
+export const toggleCustomerProductFavoriteStatus = createAsyncThunk(
+  "product/toggleFavoriteStatus",
+  async ({ productId, isFavorite, customerId }: { productId: string; isFavorite: boolean; customerId: string; }, { rejectWithValue }) => {
+    try {
+      const response = await putApi(TOGGLECUSTOMERPRODUCTFAVORITESTATUS, { productId, isFavorite, customerId }, {}, false);
+      return response;
+    } catch (error: any) {
+      const message = error?.response?.data.message;
+      return rejectWithValue(message ? message : "Toggle favorite failed. Please try again.");
+    }
+  }
+);
+
+export const bulkToggleCustomerProductFavoriteStatus = createAsyncThunk(
+  "product/bulkToggleFavoriteStatus",
+  async ({ customerId, productUpdates }: { customerId: string; productUpdates: Array<{ productId: string; isFavorite: boolean; }>; }, { rejectWithValue }) => {
+    try {
+      const response = await putApi(TOGGLEBULKCUSTOMERPRODUCTFAVORITESTATUS, { customerId, productUpdates }, {}, false);
+      return response;
+    } catch (error: any) {
+      const message = error?.response?.data.message;
+      return rejectWithValue(message ? message : "Bulk toggle favorite failed. Please try again.");
+    }
+  }
+);
+
 
 // Create the auth slice
 const productSlice = createSlice({
@@ -539,6 +566,32 @@ const productSlice = createSlice({
         state.loading = false;
       })
       .addCase(assignProductsToCustomersAsync.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    builder
+      .addCase(toggleCustomerProductFavoriteStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(toggleCustomerProductFavoriteStatus.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(toggleCustomerProductFavoriteStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    builder
+      .addCase(bulkToggleCustomerProductFavoriteStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(bulkToggleCustomerProductFavoriteStatus.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(bulkToggleCustomerProductFavoriteStatus.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import React, { useEffect, useRef, useState } from "react";
 import { ProductsTable } from "./ProductsTable";
-import { Pagination } from "../Pagination/Pagination";
 import {
   getCustomerProductsAsync,
   getProductsAsync,
@@ -14,6 +13,8 @@ import {
   bulkPriceUpdate,
   toggleProductTaxStatus,
   toggleCustomerProductTaxStatus,
+  toggleCustomerProductFavoriteStatus,
+  bulkToggleCustomerProductFavoriteStatus,
 } from "@/redux/slices/productSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
@@ -32,6 +33,7 @@ export interface Product {
   taxEnabled: boolean;
   image: string;
   customerPrice: number;
+  isFavorite?: boolean;
 }
 
 const Products = () => {
@@ -103,6 +105,36 @@ const Products = () => {
     }
   };
 
+  const handleFavoriteStatusUpdate = async (isFavorite: boolean, productId: string) => {
+    try {
+      await dispatch(toggleCustomerProductFavoriteStatus({ productId, isFavorite, customerId: user._id })).unwrap();
+      dispatch(getCustomerProductsAsync({}));
+      success("Favorite status updated.");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleBulkFavorite = async () => {
+    try {
+      const allAreFavorites = selectedProducts.every(product => product.isFavorite);
+
+      const productUpdates = selectedProducts.map(product => ({
+        productId: product._id,
+        isFavorite: !allAreFavorites
+      }));
+
+      await dispatch(bulkToggleCustomerProductFavoriteStatus({ customerId: user._id, productUpdates })).unwrap();
+      dispatch(getCustomerProductsAsync({}));
+      setSelectedProducts([]);
+      setAllSelected(false);
+      success(allAreFavorites ? "Products removed from favorites." : "Products set as favorite.");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+
   const handleButtonClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click(); // Trigger the hidden file input click
@@ -167,11 +199,11 @@ const Products = () => {
               </Button>
               {selectedProducts.length > 0 && (
                 <Button
-                  onClick={() => console.log("Bulk favorite:", selectedProducts)}
+                  onClick={handleBulkFavorite}
                   className="min-w-[130px]"
                   size="lg"
                 >
-                  Set as Favorite
+                  {selectedProducts.every(product => product.isFavorite) ? "Remove from Favorites" : "Set as Favorite"}
                 </Button>
               )}
             </div>
@@ -184,6 +216,7 @@ const Products = () => {
           pageSize={rowsPerPage}
           isAllSelected={isAllSelected}
           updateTaxStatus={handleTaxStatusUpdate}
+          updateFavoriteStatus={handleFavoriteStatusUpdate}
           selectAll={(isSelected) => {
             if (isSelected) {
               setAllSelected(true);
@@ -209,16 +242,6 @@ const Products = () => {
           updateStatus={handleUpdate}
           isAdmin={user.admin}
           products={products}
-        />
-        <Pagination
-          currentPage={currentPage}
-          totalPages={Math.ceil(products.length / rowsPerPage)}
-          rowsPerPage={rowsPerPage}
-          onPageChange={setCurrentPage}
-          onRowsPerPageChange={(e: number) => {
-            setRowsPerPage(e);
-            setCurrentPage(1);
-          }}
         />
       </div>
       {isAssignModalOpen && (

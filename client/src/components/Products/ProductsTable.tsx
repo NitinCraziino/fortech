@@ -39,6 +39,7 @@ export type Product = {
   image: string;
   taxEnabled: boolean;
   customerPrice: number;
+  isFavorite?: boolean;
 };
 
 export const ProductsTable = (props: {
@@ -54,6 +55,7 @@ export const ProductsTable = (props: {
   isAllSelected: boolean;
   pageIndex: number;
   pageSize: number;
+  updateFavoriteStatus: (isFavorite: boolean, _id: string) => void;
 }) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -183,6 +185,9 @@ export const ProductsTable = (props: {
           console.log("Deleting product:", product._id);
         };
 
+        console.log(product);
+
+
         return (
           <>
             <div className="flex items-center justify-center gap-2">
@@ -214,12 +219,12 @@ export const ProductsTable = (props: {
                 </React.Fragment>
               ) : (
                 <Button
-                  onClick={() => console.log("Toggle favorite for:", product._id)}
+                  onClick={() => props.updateFavoriteStatus(!product.isFavorite, product._id)}
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
                 >
-                  <Heart className="h-4 w-4" />
+                  <Heart className={`h-4 w-4 ${product?.isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
                 </Button>
               )}
             </div>

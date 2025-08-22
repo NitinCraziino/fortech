@@ -80,7 +80,6 @@ const getAllProducts = async (req, res) => {
   }
 };
 
-
 const getCustomerProducts = async (req, res) => {
   try {
     const customerProduct = await CustomerProduct.findOne({customerId: req.user._id})
@@ -90,9 +89,16 @@ const getCustomerProducts = async (req, res) => {
       const products = customerProduct.products.map((p) => ({
         ...p.productId,
         customerPrice: p.price,
-        taxEnabled: p.taxEnabled
+        taxEnabled: p.taxEnabled,
+        isFavorite: p.isFavorite || false
         // Attach full product details
-      }));
+      }))
+        .sort((a, b) => {
+          // Sort favorites first (true comes before false)
+          if (a.isFavorite && !b.isFavorite) return -1;
+          if (!a.isFavorite && b.isFavorite) return 1;
+          return 0;
+        });
 
       res.status(200).json({products});
     } else {
@@ -102,6 +108,7 @@ const getCustomerProducts = async (req, res) => {
     res.status(500).json({error: error.message || "Error getting products."});
   }
 };
+
 
 const getProductById = async (req, res) => {
   try {
@@ -479,6 +486,95 @@ const toggleCustomerProductTaxStatus = async (req, res) => {
   }
 };
 
+// Toggle favorite status for a single customer-specific product
+const toggleCustomerProductFavoriteStatus = async (req, res) => {
+  try {
+    const {customerId, productId, isFavorite} = req.body;
+
+    const customerProduct = await CustomerProduct.findOneAndUpdate(
+      {
+        customerId,
+        "products.productId": productId
+      },
+      {
+        $set: {"products.$.isFavorite": isFavorite}
+      },
+      {new: true}
+    );
+
+    if (!customerProduct) {
+      return res.status(400).json({error: "Customer product not found"});
+    }
+
+    res.status(200).json({customerProduct});
+  } catch (error) {
+    res.status(500).json({error: error.message || "Error updating customer product favorite status."});
+  }
+};
+
+// Bulk toggle favorite status for multiple customer-specific products
+const bulkToggleCustomerProductFavoriteStatus = async (req, res) => {
+  try {
+    const {customerId, productUpdates} = req.body;
+
+    // Validate input
+    if (!productUpdates || !Array.isArray(productUpdates)) {
+      return res.status(400).json({error: "Invalid product updates data"});
+    }
+
+    // Verify customer exists and is not admin
+    const customer = await User.findOne({
+      _id: customerId,
+      admin: false
+    });
+
+    if (!customer) {
+      return res.status(400).json({error: "Customer not found or is admin"});
+    }
+
+    // Process bulk operations
+    const bulkOps = [];
+
+    for (const update of productUpdates) {
+      const {productId, isFavorite} = update;
+
+      // Ensure isFavorite is properly set - default to true if not specified
+      const favoriteStatus = typeof isFavorite === "boolean" ? isFavorite : true;
+
+      bulkOps.push({
+        updateOne: {
+          filter: {
+            customerId,
+            "products.productId": new mongoose.Types.ObjectId(productId)
+          },
+          update: {
+            $set: {
+              "products.$.isFavorite": favoriteStatus
+            }
+          }
+        }
+      });
+    }
+
+    // Execute bulk operations if there are any
+    if (bulkOps.length > 0) {
+      const result = await CustomerProduct.bulkWrite(bulkOps);
+
+      res.status(200).json({
+        message: `${result.modifiedCount} products favorite status updated successfully`,
+        result
+      });
+    } else {
+      res.status(400).json({error: "No valid product updates provided"});
+    }
+
+  } catch (error) {
+    console.error("Error bulk updating favorite status:", error);
+    res.status(500).json({error: error.message || "Error updating customer product favorite status."});
+  }
+};
+
+
 module.exports = {
   createProduct,
   updateProductStatus,
@@ -492,5 +588,8 @@ module.exports = {
   importCustomerProducts,
   assignProductsToCustomers,
   toggleCustomerProductTaxStatus,
-  toggleProductTaxStatus
+  toggleProductTaxStatus,
+  toggleCustomerProductFavoriteStatus,
+  bulkToggleCustomerProductFavoriteStatus,
+  toggleCustomerProductFavoriteStatus
 };

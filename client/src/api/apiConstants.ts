@@ -28,3 +28,5 @@ export const TOGGLEPRODUCTTAXSTATUS = "/product/toggleTaxSetting";
 export const TOGGLECUSTOMERPRODUCTTAXSTATUS = "/user/toggleTaxSetting";
 export const FULFILLORDERS = "/order/fulfill";
 export const DELETEORDER = "/order/:orderId";
+export const TOGGLECUSTOMERPRODUCTFAVORITESTATUS = "/product/toggleCustomerProductFavorite";
+export const TOGGLEBULKCUSTOMERPRODUCTFAVORITESTATUS = "/product/toggleBulkCustomerProductFavorite";
