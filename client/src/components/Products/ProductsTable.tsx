@@ -185,9 +185,6 @@ export const ProductsTable = (props: {
           console.log("Deleting product:", product._id);
         };
 
-        console.log(product);
-
-
         return (
           <>
             <div className="flex items-center justify-center gap-2">
