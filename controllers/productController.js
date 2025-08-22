@@ -377,6 +377,7 @@ const assignProductsToCustomers = async (req, res) => {
 
     // Process each assignment
     const bulkOps = [];
+    const newCustomerProducts = new Map(); // Track new customers to avoid duplicates
 
     for (const assignment of assignments) {
       const customerProductsDoc = await CustomerProduct.findOne({
@@ -424,7 +425,29 @@ const assignProductsToCustomers = async (req, res) => {
             }
           });
         }
+      } else {
+        // Handle new customer - collect all products for this customer first
+        if (!newCustomerProducts.has(assignment.customerId)) {
+          newCustomerProducts.set(assignment.customerId, []);
+        }
+        newCustomerProducts.get(assignment.customerId).push({
+          productId: assignment.productId,
+          price: assignment.price,
+          taxEnabled: taxEnabled
+        });
       }
+    }
+
+    // Create operation for new customers with all their products
+    for (const [customerId, products] of newCustomerProducts) {
+      bulkOps.push({
+        insertOne: {
+          document: {
+            customerId: customerId,
+            products: products
+          }
+        }
+      });
     }
 
     // Execute bulk operations if there are any
