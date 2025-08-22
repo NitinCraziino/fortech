@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronsUpDown, Eye, Pencil } from "lucide-react";
+import { ChevronsUpDown, Eye, Pencil, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -41,7 +41,7 @@ export type Product = {
   customerPrice: number;
 };
 
-export function ProductsTable(props: {
+export const ProductsTable = (props: {
   products: Product[];
   isAdmin: boolean;
   updateStatus: (active: boolean, _id: string) => void;
@@ -54,12 +54,13 @@ export function ProductsTable(props: {
   isAllSelected: boolean;
   pageIndex: number;
   pageSize: number;
-}) {
+}) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
   const navigate = useNavigate();
+
   const getCols = () => {
     const columns: ColumnDef<Product>[] = [
       {
@@ -155,7 +156,6 @@ export function ProductsTable(props: {
       }
     ];
 
-
     if (props.isAdmin) {
       columns.push(
         {
@@ -194,7 +194,7 @@ export function ProductsTable(props: {
               >
                 <Eye className="h-4 w-4" />
               </Button>
-              {props.isAdmin && (
+              {props.isAdmin ? (
                 <React.Fragment>
                   <Button
                     onClick={() => navigate(`/edit-product/${product._id}`)}
@@ -212,6 +212,15 @@ export function ProductsTable(props: {
                     checked={product.active}
                   />
                 </React.Fragment>
+              ) : (
+                <Button
+                  onClick={() => console.log("Toggle favorite for:", product._id)}
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                >
+                  <Heart className="h-4 w-4" />
+                </Button>
               )}
             </div>
             <DeleteProductModal
@@ -301,4 +310,4 @@ export function ProductsTable(props: {
       </div>
     </div>
   );
-}
+};

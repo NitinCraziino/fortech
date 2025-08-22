@@ -34,7 +34,7 @@ export interface Product {
   customerPrice: number;
 }
 
-const Products: React.FC = () => {
+const Products = () => {
   const { success, errorToast } = useToastActions();
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -155,15 +155,26 @@ const Products: React.FC = () => {
               )}
             </div>
           ) : (
-            <Button
-              onClick={() => {
-                dispatch(selectOrderProducts(selectedProducts));
-                navigate("/create-order");
-              }}
-              className="px-[22px]"
-            >
-              Create Order
-            </Button>
+            <div className="flex gap-4 items-center">
+              <Button
+                onClick={() => {
+                  dispatch(selectOrderProducts(selectedProducts));
+                  navigate("/create-order");
+                }}
+                className="px-[22px]"
+              >
+                Create Order
+              </Button>
+              {selectedProducts.length > 0 && (
+                <Button
+                  onClick={() => console.log("Bulk favorite:", selectedProducts)}
+                  className="min-w-[130px]"
+                  size="lg"
+                >
+                  Set as Favorite
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </div>
