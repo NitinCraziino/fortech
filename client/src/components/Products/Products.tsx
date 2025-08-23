@@ -21,6 +21,7 @@ import { AppDispatch } from "@/store";
 import { useToastActions } from "@/lib/utils";
 import { Spinner } from "../ui/spinner";
 import BulkAssignModal from "../modals/BulkAssignModal";
+import { Pagination } from "../Pagination/Pagination";
 
 export interface Product {
   _id: string;
@@ -242,6 +243,16 @@ const Products = () => {
           updateStatus={handleUpdate}
           isAdmin={user.admin}
           products={products}
+        />
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(products.length / rowsPerPage)}
+          rowsPerPage={rowsPerPage}
+          onPageChange={setCurrentPage}
+          onRowsPerPageChange={(e: number) => {
+            setRowsPerPage(e);
+            setCurrentPage(1);
+          }}
         />
       </div>
       {isAssignModalOpen && (
