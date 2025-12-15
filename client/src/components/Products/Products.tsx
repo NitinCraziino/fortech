@@ -12,6 +12,7 @@ import {
   updateProductStatusAsync,
   bulkPriceUpdate,
   toggleProductTaxStatus,
+  toggleProductStockStatus,
   toggleCustomerProductTaxStatus,
   toggleCustomerProductFavoriteStatus,
   bulkToggleCustomerProductFavoriteStatus,
@@ -34,6 +35,7 @@ export interface Product {
   image: string;
   customerPrice: number;
   isFavorite?: boolean;
+  inStock?: boolean;
 }
 
 const Products = () => {
@@ -100,6 +102,16 @@ const Products = () => {
         dispatch(getCustomerProductsAsync({}));
       }
       success("Tax status updated.");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleStockStatusUpdate = async (inStock: boolean, productId: string) => {
+    try {
+      await dispatch(toggleProductStockStatus({ productId, inStock })).unwrap();
+      dispatch(getProductsAsync({}));
+      success("Stock status updated.");
     } catch (error) {
       console.log(error);
     }
@@ -216,6 +228,7 @@ const Products = () => {
           pageSize={rowsPerPage}
           isAllSelected={isAllSelected}
           updateTaxStatus={handleTaxStatusUpdate}
+          updateStockStatus={handleStockStatusUpdate}
           updateFavoriteStatus={handleFavoriteStatusUpdate}
           selectAll={(isSelected) => {
             if (isSelected) {

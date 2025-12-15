@@ -40,6 +40,7 @@ export type Product = {
   taxEnabled: boolean;
   customerPrice: number;
   isFavorite?: boolean;
+  inStock?: boolean;
 };
 
 export const ProductsTable = (props: {
@@ -47,6 +48,7 @@ export const ProductsTable = (props: {
   isAdmin: boolean;
   updateStatus: (active: boolean, _id: string) => void;
   updateTaxStatus: (taxEnabled: boolean, _id: string) => void;
+  updateStockStatus: (inStock: boolean, _id: string) => void;
   filterText: string;
   setFilterText: (e: string) => void;
   setSelectedProducts: (e: boolean, product: Product) => void;
@@ -155,6 +157,18 @@ export const ProductsTable = (props: {
           <div className="max-w-[300px] truncate">{row.getValue("description")}</div>
         ),
         filterFn: "includesString",
+      },
+      {
+        id: "inStock",
+        header: "In Stock",
+        cell: ({ row }) => {
+          const inStock = row.original.inStock !== undefined ? row.original.inStock : true;
+          return (
+            <div className={`font-medium ${inStock ? 'text-green-600' : 'text-red-600'}`}>
+              {inStock ? 'Yes' : 'No'}
+            </div>
+          );
+        },
       }
     ];
 
@@ -168,6 +182,21 @@ export const ProductsTable = (props: {
               onCheckedChange={(e: boolean) => props.updateTaxStatus(e, row.original._id)}
             />
           }</div>,
+        },
+        {
+          id: "stockStatus",
+          header: "Stock Status",
+          cell: ({ row }) => {
+            const inStock = row.original.inStock !== undefined ? row.original.inStock : true;
+            return (
+              <div>
+                <Switch 
+                  checked={inStock}
+                  onCheckedChange={(e: boolean) => props.updateStockStatus(e, row.original._id)}
+                />
+              </div>
+            );
+          },
         }
       );
     }

@@ -13,6 +13,7 @@ const {
   importCustomerProducts,
   assignProductsToCustomers,
   toggleProductTaxStatus,
+  toggleProductStockStatus,
   toggleCustomerProductFavoriteStatus,
   bulkToggleCustomerProductFavoriteStatus
 } = require("../controllers/productController");
@@ -31,6 +32,7 @@ router.post("/bulkUpdatePrice", jwtAuthMiddleware, upload.single("prices"), bulk
 router.post("/importCustomerProducts", jwtAuthMiddleware, upload.single("products"), importCustomerProducts)
 router.post("/assignToCustomers", jwtAuthMiddleware, assignProductsToCustomers);
 router.put("/toggleTaxSetting", jwtAuthMiddleware, toggleProductTaxStatus);
+router.put("/toggleStockStatus", jwtAuthMiddleware, toggleProductStockStatus);
 router.put("/toggleCustomerProductFavorite", jwtAuthMiddleware, toggleCustomerProductFavoriteStatus);
 router.put("/toggleBulkCustomerProductFavorite", jwtAuthMiddleware, bulkToggleCustomerProductFavoriteStatus);
 

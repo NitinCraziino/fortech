@@ -9,6 +9,7 @@ const mongoose = require("mongoose");
 const createProduct = async (req, res) => {
   try {
     const image = req.file ? `/uploads/${req.file.filename}` : null;
+    const inStock = req.body.inStock !== undefined ? req.body.inStock === 'true' : true;
     const newProduct = new Product({
       partNo: req.body.partNo,
       description: req.body.description,
@@ -17,6 +18,7 @@ const createProduct = async (req, res) => {
       image, // Store the image URL
       active: true,
       name: req.body.name,
+      inStock: inStock,
     });
     const savedProduct = await newProduct.save();
     res.status(200).json({product: savedProduct});
@@ -61,6 +63,9 @@ const editProduct = async (req, res) => {
       unitPrice: req.body.unitPrice,
       image: image ? image : productData.image, // Store the image URL
     };
+    if (req.body.inStock !== undefined) {
+      updates.inStock = req.body.inStock === 'true';
+    }
     await Product.updateOne({_id: productId}, updates);
     res.status(200).json({message: "success"});
   } catch (error) {
@@ -484,6 +489,26 @@ const toggleProductTaxStatus = async (req, res) => {
   }
 };
 
+const toggleProductStockStatus = async (req, res) => {
+  try {
+    const {productId, inStock} = req.body;
+
+    const updatedProduct = await Product.findByIdAndUpdate(
+      productId,
+      {inStock},
+      {new: true}
+    );
+
+    if (!updatedProduct) {
+      return res.status(400).json({error: "Invalid product"});
+    }
+
+    res.status(200).json({product: updatedProduct});
+  } catch (error) {
+    res.status(500).json({error: error.message || "Error updating product stock status."});
+  }
+};
+
 // Add this function to toggle tax status for a customer-specific product
 const toggleCustomerProductTaxStatus = async (req, res) => {
   try {
@@ -613,6 +638,7 @@ module.exports = {
   assignProductsToCustomers,
   toggleCustomerProductTaxStatus,
   toggleProductTaxStatus,
+  toggleProductStockStatus,
   toggleCustomerProductFavoriteStatus,
   bulkToggleCustomerProductFavoriteStatus,
   toggleCustomerProductFavoriteStatus

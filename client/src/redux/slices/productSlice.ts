@@ -13,6 +13,7 @@ import {
   IMPORTCUSTOMERPRODUCTS,
   ASSIGNPRODUCTSTOCUSTOMERS,
   TOGGLEPRODUCTTAXSTATUS,
+  TOGGLEPRODUCTSTOCKSTATUS,
   TOGGLECUSTOMERPRODUCTTAXSTATUS,
   TOGGLEBULKCUSTOMERPRODUCTFAVORITESTATUS,
   TOGGLECUSTOMERPRODUCTFAVORITESTATUS,
@@ -68,7 +69,8 @@ export const createProductAsync = createAsyncThunk(
       unit,
       unitPrice,
       image,
-    }: { name: string; partNo: string; description: string; unit: string; unitPrice: string; image: File | null; },
+      inStock,
+    }: { name: string; partNo: string; description: string; unit: string; unitPrice: string; image: File | null; inStock?: boolean; },
     { rejectWithValue }
   ) => {
     try {
@@ -78,6 +80,9 @@ export const createProductAsync = createAsyncThunk(
       formData.append("description", description);
       formData.append("unit", unit);
       formData.append("unitPrice", unitPrice);
+      if (inStock !== undefined) {
+        formData.append("inStock", inStock.toString());
+      }
       if (image) {
         formData.append("image", image);
       }
@@ -178,6 +183,19 @@ export const toggleProductTaxStatus = createAsyncThunk(
   }
 );
 
+export const toggleProductStockStatus = createAsyncThunk(
+  "product/toggleStockStatus",
+  async ({ productId, inStock }: { productId: string; inStock: boolean; }, { rejectWithValue }) => {
+    try {
+      const response = await putApi(TOGGLEPRODUCTSTOCKSTATUS, { productId, inStock }, {}, false);
+      return response;
+    } catch (error: any) {
+      const message = error?.response?.data.message; // Return error in case of failure
+      return rejectWithValue(message ? message : "Update stock status failed. Please try again.");
+    }
+  }
+);
+
 export const getProductById = createAsyncThunk(
   "product/getById",
   async ({ _id }: { _id: string; }, { rejectWithValue }) => {
@@ -207,6 +225,7 @@ export const editProductAsync = createAsyncThunk(
       unitPrice,
       image,
       name,
+      inStock,
     }: {
       _id: string;
       partNo: string;
@@ -215,6 +234,7 @@ export const editProductAsync = createAsyncThunk(
       unitPrice: string;
       image: File | null;
       name: string;
+      inStock?: boolean;
     },
     { rejectWithValue }
   ) => {
@@ -225,6 +245,9 @@ export const editProductAsync = createAsyncThunk(
       formData.append("description", description);
       formData.append("unit", unit);
       formData.append("unitPrice", unitPrice);
+      if (inStock !== undefined) {
+        formData.append("inStock", inStock.toString());
+      }
       if (image) {
         formData.append("image", image);
       }
@@ -459,6 +482,19 @@ const productSlice = createSlice({
         state.loading = false;
       })
       .addCase(toggleProductTaxStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    builder
+      .addCase(toggleProductStockStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(toggleProductStockStatus.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(toggleProductStockStatus.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
