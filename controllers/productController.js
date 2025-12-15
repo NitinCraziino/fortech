@@ -509,6 +509,33 @@ const toggleProductStockStatus = async (req, res) => {
   }
 };
 
+const bulkToggleProductStockStatus = async (req, res) => {
+  try {
+    const {productIds, inStock} = req.body;
+
+    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({error: "Invalid product IDs"});
+    }
+
+    if (typeof inStock !== "boolean") {
+      return res.status(400).json({error: "Invalid stock status value"});
+    }
+
+    const result = await Product.updateMany(
+      {_id: {$in: productIds}},
+      {$set: {inStock}}
+    );
+
+    res.status(200).json({
+      message: `${result.modifiedCount} products stock status updated successfully`,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error("Error bulk updating stock status:", error);
+    res.status(500).json({error: error.message || "Error updating products stock status."});
+  }
+};
+
 // Add this function to toggle tax status for a customer-specific product
 const toggleCustomerProductTaxStatus = async (req, res) => {
   try {
@@ -639,6 +666,7 @@ module.exports = {
   toggleCustomerProductTaxStatus,
   toggleProductTaxStatus,
   toggleProductStockStatus,
+  bulkToggleProductStockStatus,
   toggleCustomerProductFavoriteStatus,
   bulkToggleCustomerProductFavoriteStatus,
   toggleCustomerProductFavoriteStatus

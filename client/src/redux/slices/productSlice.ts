@@ -14,6 +14,7 @@ import {
   ASSIGNPRODUCTSTOCUSTOMERS,
   TOGGLEPRODUCTTAXSTATUS,
   TOGGLEPRODUCTSTOCKSTATUS,
+  BULKTOGGLEPRODUCTSTOCKSTATUS,
   TOGGLECUSTOMERPRODUCTTAXSTATUS,
   TOGGLEBULKCUSTOMERPRODUCTFAVORITESTATUS,
   TOGGLECUSTOMERPRODUCTFAVORITESTATUS,
@@ -192,6 +193,19 @@ export const toggleProductStockStatus = createAsyncThunk(
     } catch (error: any) {
       const message = error?.response?.data.message; // Return error in case of failure
       return rejectWithValue(message ? message : "Update stock status failed. Please try again.");
+    }
+  }
+);
+
+export const bulkToggleProductStockStatus = createAsyncThunk(
+  "product/bulkToggleStockStatus",
+  async ({ productIds, inStock }: { productIds: string[]; inStock: boolean; }, { rejectWithValue }) => {
+    try {
+      const response = await putApi(BULKTOGGLEPRODUCTSTOCKSTATUS, { productIds, inStock }, {}, false);
+      return response;
+    } catch (error: any) {
+      const message = error?.response?.data.message;
+      return rejectWithValue(message ? message : "Bulk update stock status failed. Please try again.");
     }
   }
 );
@@ -495,6 +509,19 @@ const productSlice = createSlice({
         state.loading = false;
       })
       .addCase(toggleProductStockStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    builder
+      .addCase(bulkToggleProductStockStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(bulkToggleProductStockStatus.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(bulkToggleProductStockStatus.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

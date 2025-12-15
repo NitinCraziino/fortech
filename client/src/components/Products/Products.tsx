@@ -13,6 +13,7 @@ import {
   bulkPriceUpdate,
   toggleProductTaxStatus,
   toggleProductStockStatus,
+  bulkToggleProductStockStatus,
   toggleCustomerProductTaxStatus,
   toggleCustomerProductFavoriteStatus,
   bulkToggleCustomerProductFavoriteStatus,
@@ -146,6 +147,21 @@ const Products = () => {
     }
   };
 
+  const handleBulkStockStatus = async () => {
+    try {
+      const allInStock = selectedProducts.every(product => product.inStock !== false);
+      const productIds = selectedProducts.map(product => product._id);
+
+      await dispatch(bulkToggleProductStockStatus({ productIds, inStock: !allInStock })).unwrap();
+      dispatch(getProductsAsync({}));
+      setSelectedProducts([]);
+      setAllSelected(false);
+      success(allInStock ? "Products marked as out of stock." : "Products marked as in stock.");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
 
   const handleButtonClick = () => {
     if (fileInputRef.current) {
@@ -189,13 +205,23 @@ const Products = () => {
                 Bulk Update Prices
               </Button>
               {selectedProducts.length > 0 && (
-                <Button
-                  onClick={() => setIsAssignModalOpen(true)}
-                  className="min-w-[130px]"
-                  size="lg"
-                >
-                  Assign to Customers
-                </Button>
+                <>
+                  <Button
+                    onClick={() => setIsAssignModalOpen(true)}
+                    className="min-w-[130px]"
+                    size="lg"
+                  >
+                    Assign to Customers
+                  </Button>
+                  <Button
+                    onClick={handleBulkStockStatus}
+                    className="min-w-[130px]"
+                    size="lg"
+                    variant="outline"
+                  >
+                    {selectedProducts.every(product => product.inStock !== false) ? "Mark Out of Stock" : "Mark In Stock"}
+                  </Button>
+                </>
               )}
             </div>
           ) : (
