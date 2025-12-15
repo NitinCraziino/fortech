@@ -217,7 +217,6 @@ const Products = () => {
                     onClick={handleBulkStockStatus}
                     className="min-w-[130px]"
                     size="lg"
-                    variant="outline"
                   >
                     {selectedProducts.every(product => product.inStock !== false) ? "Mark Out of Stock" : "Mark In Stock"}
                   </Button>
