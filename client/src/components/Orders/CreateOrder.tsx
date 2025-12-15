@@ -42,6 +42,7 @@ interface Product {
   image: string;
   customerPrice: number;
   taxEnabled: boolean;
+  inStock?: boolean;
 }
 
 interface ProductError {
@@ -301,10 +302,11 @@ export default function CreateOrder() {
         <h1 className="text-2xl font-medium">Product Details</h1>
         <Card className="flex flex-col gap-4 mb-6 bg-[#F2F2F2] border-none shadow-none p-4">
           <div className="p-4 bg-white rounded-lg border border-input">
-            <div className="grid grid-cols-[minmax(180px,250px),80px,80px,70px,90px,90px,90px] gap-3 mb-2 relative">
+            <div className="grid grid-cols-[minmax(180px,250px),80px,80px,80px,70px,90px,90px,90px] gap-3 mb-2 relative">
               <div className="text-sm font-medium">Product</div>
               <div className="text-sm font-medium">Price</div>
               <div className="text-sm font-medium">Quantity</div>
+              <div className="text-sm font-medium">In Stock</div>
               <div className="text-sm font-medium">Tax applied</div>
               <div className="text-sm font-medium">Tax Amount</div>
               <div className="text-sm font-medium">Amount</div>
@@ -315,7 +317,7 @@ export default function CreateOrder() {
               {rows.map((row, index) => (
                 <div
                   key={index}
-                  className="grid grid-cols-[minmax(180px,250px),80px,80px,70px,90px,90px,90px] gap-3 relative items-center"
+                  className="grid grid-cols-[minmax(180px,250px),80px,80px,80px,70px,90px,90px,90px] gap-3 relative items-center"
                 >
                   <div className="flex flex-col gap-1">
                     <Select
@@ -355,6 +357,19 @@ export default function CreateOrder() {
                     {errors[index]?.quantityError && (
                       <span className="text-xs text-destructive">{errors[index].quantityError}</span>
                     )}
+                  </div>
+
+                  <div className="flex items-center">
+                    {(() => {
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      const productData = products.find((x: any) => x._id === row.productId);
+                      const inStock = productData?.inStock !== undefined ? productData.inStock : true;
+                      return (
+                        <span className={`text-sm font-medium ${inStock ? 'text-green-600' : 'text-red-600'}`}>
+                          {inStock ? 'Yes' : 'No'}
+                        </span>
+                      );
+                    })()}
                   </div>
 
                   <span>{row.taxEnabled ? "6%" : "0"}</span>

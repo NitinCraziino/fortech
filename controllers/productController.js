@@ -90,7 +90,8 @@ const getCustomerProducts = async (req, res) => {
         ...p.productId,
         customerPrice: p.price,
         taxEnabled: p.taxEnabled,
-        isFavorite: p.isFavorite || false
+        isFavorite: p.isFavorite || false,
+        inStock: p.productId.inStock !== undefined ? p.productId.inStock : true,
         // Attach full product details
       }))
         .sort((a, b) => {
