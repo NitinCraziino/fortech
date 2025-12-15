@@ -157,20 +157,36 @@ export const ProductsTable = (props: {
           <div className="max-w-[300px] truncate">{row.getValue("description")}</div>
         ),
         filterFn: "includesString",
-      },
-      {
-        id: "inStock",
-        header: "In Stock",
-        cell: ({ row }) => {
-          const inStock = row.original.inStock !== undefined ? row.original.inStock : true;
+      }
+    ];
+
+    // Add In Stock column - different display for admin vs customer
+    columns.push({
+      id: "inStock",
+      header: "In Stock",
+      cell: ({ row }) => {
+        const inStock = row.original.inStock !== undefined ? row.original.inStock : true;
+        
+        if (props.isAdmin) {
+          // Admin sees a toggle switch
+          return (
+            <div>
+              <Switch 
+                checked={inStock}
+                onCheckedChange={(e: boolean) => props.updateStockStatus(e, row.original._id)}
+              />
+            </div>
+          );
+        } else {
+          // Customer sees text only
           return (
             <div className={`font-medium ${inStock ? 'text-green-600' : 'text-red-600'}`}>
               {inStock ? 'Yes' : 'No'}
             </div>
           );
-        },
-      }
-    ];
+        }
+      },
+    });
 
     if (props.isAdmin) {
       columns.push(
@@ -182,21 +198,6 @@ export const ProductsTable = (props: {
               onCheckedChange={(e: boolean) => props.updateTaxStatus(e, row.original._id)}
             />
           }</div>,
-        },
-        {
-          id: "stockStatus",
-          header: "Stock Status",
-          cell: ({ row }) => {
-            const inStock = row.original.inStock !== undefined ? row.original.inStock : true;
-            return (
-              <div>
-                <Switch 
-                  checked={inStock}
-                  onCheckedChange={(e: boolean) => props.updateStockStatus(e, row.original._id)}
-                />
-              </div>
-            );
-          },
         }
       );
     }
