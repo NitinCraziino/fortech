@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { createProductAsync, editProductAsync, getProductById } from "@/redux/slices/productSlice";
@@ -22,6 +23,7 @@ interface Product {
   image: File | null;
   unit?: string;
   customerPrice?: number;
+  inStock?: boolean;
 }
 
 const CreateProduct: React.FC = () => {
@@ -56,6 +58,7 @@ const CreateProduct: React.FC = () => {
     description: "",
     image: null,
     name: "",
+    inStock: true,
   });
 
 
@@ -73,7 +76,7 @@ const CreateProduct: React.FC = () => {
   });
 
   const setFormValues = (product: Product) => {
-    const { partNo, unitPrice, unit, description, image, name, customerPrice } = product;
+    const { partNo, unitPrice, unit, description, image, name, customerPrice, inStock } = product;
     setFormData({
       name,
       partNo,
@@ -81,6 +84,7 @@ const CreateProduct: React.FC = () => {
       unitOfMeasure: unit ? unit : "",
       description,
       image: null, // Reset image as it cannot be passed directly (for security reasons)
+      inStock: inStock !== undefined ? inStock : true,
     });
     if(image) {
       setImagePreview(`https://www.naisorders.com${image as unknown as string}`);
@@ -180,7 +184,7 @@ const CreateProduct: React.FC = () => {
     e.preventDefault();
 
     if (validateForm()) {
-      const { partNo, unitPrice, unitOfMeasure, description, image, name } = formData;
+      const { partNo, unitPrice, unitOfMeasure, description, image, name, inStock } = formData;
       let result = null;
       try {
         if (isEdit && id) {
@@ -193,6 +197,7 @@ const CreateProduct: React.FC = () => {
               description,
               image,
               _id: id,
+              inStock,
             })
           ).unwrap();
         } else {
@@ -204,6 +209,7 @@ const CreateProduct: React.FC = () => {
               unit: unitOfMeasure,
               description,
               image,
+              inStock,
             })
           ).unwrap();
         }
@@ -351,6 +357,22 @@ const CreateProduct: React.FC = () => {
             />
             {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
           </div>
+
+          {!isView && (
+            <div className="flex items-center gap-3">
+              <Label htmlFor="inStock" className="text-sm">
+                In Stock
+              </Label>
+              <Switch
+                id="inStock"
+                checked={formData.inStock}
+                onCheckedChange={(checked) => setFormData({ ...formData, inStock: checked })}
+              />
+              <span className="text-sm text-gray-600">
+                {formData.inStock ? 'Yes' : 'No'}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-3">

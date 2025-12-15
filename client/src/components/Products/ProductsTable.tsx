@@ -40,6 +40,7 @@ export type Product = {
   taxEnabled: boolean;
   customerPrice: number;
   isFavorite?: boolean;
+  inStock?: boolean;
 };
 
 export const ProductsTable = (props: {
@@ -47,6 +48,7 @@ export const ProductsTable = (props: {
   isAdmin: boolean;
   updateStatus: (active: boolean, _id: string) => void;
   updateTaxStatus: (taxEnabled: boolean, _id: string) => void;
+  updateStockStatus: (inStock: boolean, _id: string) => void;
   filterText: string;
   setFilterText: (e: string) => void;
   setSelectedProducts: (e: boolean, product: Product) => void;
@@ -157,6 +159,34 @@ export const ProductsTable = (props: {
         filterFn: "includesString",
       }
     ];
+
+    // Add In Stock column - different display for admin vs customer
+    columns.push({
+      id: "inStock",
+      header: "In Stock",
+      cell: ({ row }) => {
+        const inStock = row.original.inStock !== undefined ? row.original.inStock : true;
+        
+        if (props.isAdmin) {
+          // Admin sees a toggle switch
+          return (
+            <div>
+              <Switch 
+                checked={inStock}
+                onCheckedChange={(e: boolean) => props.updateStockStatus(e, row.original._id)}
+              />
+            </div>
+          );
+        } else {
+          // Customer sees text only
+          return (
+            <div className={`font-medium ${inStock ? 'text-green-600' : 'text-red-600'}`}>
+              {inStock ? 'Yes' : 'No'}
+            </div>
+          );
+        }
+      },
+    });
 
     if (props.isAdmin) {
       columns.push(

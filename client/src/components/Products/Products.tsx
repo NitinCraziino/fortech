@@ -12,6 +12,8 @@ import {
   updateProductStatusAsync,
   bulkPriceUpdate,
   toggleProductTaxStatus,
+  toggleProductStockStatus,
+  bulkToggleProductStockStatus,
   toggleCustomerProductTaxStatus,
   toggleCustomerProductFavoriteStatus,
   bulkToggleCustomerProductFavoriteStatus,
@@ -34,6 +36,7 @@ export interface Product {
   image: string;
   customerPrice: number;
   isFavorite?: boolean;
+  inStock?: boolean;
 }
 
 const Products = () => {
@@ -105,6 +108,16 @@ const Products = () => {
     }
   };
 
+  const handleStockStatusUpdate = async (inStock: boolean, productId: string) => {
+    try {
+      await dispatch(toggleProductStockStatus({ productId, inStock })).unwrap();
+      dispatch(getProductsAsync({}));
+      success("Stock status updated.");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const handleFavoriteStatusUpdate = async (isFavorite: boolean, productId: string) => {
     try {
       await dispatch(toggleCustomerProductFavoriteStatus({ productId, isFavorite, customerId: user._id })).unwrap();
@@ -129,6 +142,21 @@ const Products = () => {
       setSelectedProducts([]);
       setAllSelected(false);
       success(allAreFavorites ? "Products removed from favorites." : "Products set as favorite.");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleBulkStockStatus = async () => {
+    try {
+      const allInStock = selectedProducts.every(product => product.inStock !== false);
+      const productIds = selectedProducts.map(product => product._id);
+
+      await dispatch(bulkToggleProductStockStatus({ productIds, inStock: !allInStock })).unwrap();
+      dispatch(getProductsAsync({}));
+      setSelectedProducts([]);
+      setAllSelected(false);
+      success(allInStock ? "Products marked as out of stock." : "Products marked as in stock.");
     } catch (error) {
       console.log(error);
     }
@@ -177,13 +205,22 @@ const Products = () => {
                 Bulk Update Prices
               </Button>
               {selectedProducts.length > 0 && (
-                <Button
-                  onClick={() => setIsAssignModalOpen(true)}
-                  className="min-w-[130px]"
-                  size="lg"
-                >
-                  Assign to Customers
-                </Button>
+                <>
+                  <Button
+                    onClick={() => setIsAssignModalOpen(true)}
+                    className="min-w-[130px]"
+                    size="lg"
+                  >
+                    Assign to Customers
+                  </Button>
+                  <Button
+                    onClick={handleBulkStockStatus}
+                    className="min-w-[130px]"
+                    size="lg"
+                  >
+                    {selectedProducts.every(product => product.inStock !== false) ? "Mark Out of Stock" : "Mark In Stock"}
+                  </Button>
+                </>
               )}
             </div>
           ) : (
@@ -216,6 +253,7 @@ const Products = () => {
           pageSize={rowsPerPage}
           isAllSelected={isAllSelected}
           updateTaxStatus={handleTaxStatusUpdate}
+          updateStockStatus={handleStockStatusUpdate}
           updateFavoriteStatus={handleFavoriteStatusUpdate}
           selectAll={(isSelected) => {
             if (isSelected) {

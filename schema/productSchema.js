@@ -27,6 +27,10 @@ const ProductSchema = new mongoose.Schema(
     taxEnabled: {
       type: Boolean,
       default: true
+    },
+    inStock: {
+      type: Boolean,
+      default: true
     }
   },
   {timestamps: true}

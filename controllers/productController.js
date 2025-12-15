@@ -9,6 +9,7 @@ const mongoose = require("mongoose");
 const createProduct = async (req, res) => {
   try {
     const image = req.file ? `/uploads/${req.file.filename}` : null;
+    const inStock = req.body.inStock !== undefined ? req.body.inStock === 'true' : true;
     const newProduct = new Product({
       partNo: req.body.partNo,
       description: req.body.description,
@@ -17,6 +18,7 @@ const createProduct = async (req, res) => {
       image, // Store the image URL
       active: true,
       name: req.body.name,
+      inStock: inStock,
     });
     const savedProduct = await newProduct.save();
     res.status(200).json({product: savedProduct});
@@ -61,6 +63,9 @@ const editProduct = async (req, res) => {
       unitPrice: req.body.unitPrice,
       image: image ? image : productData.image, // Store the image URL
     };
+    if (req.body.inStock !== undefined) {
+      updates.inStock = req.body.inStock === 'true';
+    }
     await Product.updateOne({_id: productId}, updates);
     res.status(200).json({message: "success"});
   } catch (error) {
@@ -90,7 +95,8 @@ const getCustomerProducts = async (req, res) => {
         ...p.productId,
         customerPrice: p.price,
         taxEnabled: p.taxEnabled,
-        isFavorite: p.isFavorite || false
+        isFavorite: p.isFavorite || false,
+        inStock: p.productId.inStock !== undefined ? p.productId.inStock : true,
         // Attach full product details
       }))
         .sort((a, b) => {
@@ -483,6 +489,53 @@ const toggleProductTaxStatus = async (req, res) => {
   }
 };
 
+const toggleProductStockStatus = async (req, res) => {
+  try {
+    const {productId, inStock} = req.body;
+
+    const updatedProduct = await Product.findByIdAndUpdate(
+      productId,
+      {inStock},
+      {new: true}
+    );
+
+    if (!updatedProduct) {
+      return res.status(400).json({error: "Invalid product"});
+    }
+
+    res.status(200).json({product: updatedProduct});
+  } catch (error) {
+    res.status(500).json({error: error.message || "Error updating product stock status."});
+  }
+};
+
+const bulkToggleProductStockStatus = async (req, res) => {
+  try {
+    const {productIds, inStock} = req.body;
+
+    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({error: "Invalid product IDs"});
+    }
+
+    if (typeof inStock !== "boolean") {
+      return res.status(400).json({error: "Invalid stock status value"});
+    }
+
+    const result = await Product.updateMany(
+      {_id: {$in: productIds}},
+      {$set: {inStock}}
+    );
+
+    res.status(200).json({
+      message: `${result.modifiedCount} products stock status updated successfully`,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error("Error bulk updating stock status:", error);
+    res.status(500).json({error: error.message || "Error updating products stock status."});
+  }
+};
+
 // Add this function to toggle tax status for a customer-specific product
 const toggleCustomerProductTaxStatus = async (req, res) => {
   try {
@@ -612,6 +665,8 @@ module.exports = {
   assignProductsToCustomers,
   toggleCustomerProductTaxStatus,
   toggleProductTaxStatus,
+  toggleProductStockStatus,
+  bulkToggleProductStockStatus,
   toggleCustomerProductFavoriteStatus,
   bulkToggleCustomerProductFavoriteStatus,
   toggleCustomerProductFavoriteStatus

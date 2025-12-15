@@ -11,6 +11,7 @@ export interface Product {
   createdAt?: string;
   updatedAt?: string;
   taxEnabled?: boolean;
+  inStock?: boolean;
 }
 
 export interface CustomerProduct extends Product {
