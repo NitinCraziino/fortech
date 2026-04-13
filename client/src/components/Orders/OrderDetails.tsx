@@ -179,16 +179,25 @@ export default function OrderDetails() {
                     <tr>
                       <td colSpan={3}></td>
                       <td colSpan={2} className="p-2 text-right font-medium">
-                        Total Items:
+                        Total Line Items:
                       </td>
                       <td className="p-2" colSpan={2}>
-                        {order?.products.reduce((sum: number, product: Product) => sum + product.quantity, 0)}
+                        {order?.products.length}
                       </td>
                     </tr>
                     <tr>
                       <td colSpan={3}></td>
                       <td colSpan={2} className="p-2 text-right font-medium">
-                        Total:
+                        Total Before Tax:
+                      </td>
+                      <td className="p-4" colSpan={2}>
+                        ${order?.products.reduce((sum: number, product: Product) => sum + product.price * product.quantity, 0).toFixed(2)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colSpan={3}></td>
+                      <td colSpan={2} className="p-2 text-right font-medium">
+                        Total After Tax:
                       </td>
                       <td className="p-4" colSpan={2}>
                         ${order?.totalPrice.toFixed(2)}
