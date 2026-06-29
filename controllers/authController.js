@@ -15,7 +15,7 @@ const hashPassword = async (password) => {
 };
 const loginUser = async (req, res) => {
   try {
-    const { _id, name, email, admin, active, taxEnabled } = req.user;
+    const { _id, name, email, admin, active, taxEnabled, taxAmount } = req.user;
     const token = jwt.sign(
       {
         _id,
@@ -30,7 +30,7 @@ const loginUser = async (req, res) => {
     );
 
     res.status(200).json({
-      user: { _id, name, email, admin, active, taxEnabled },
+      user: { _id, name, email, admin, active, taxEnabled, taxAmount },
       token: `Bearer ${token}`,
     });
   } catch (error) {

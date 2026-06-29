@@ -23,6 +23,8 @@ interface Product {
   quantity: number;
   comments: string;
   taxEnabled: boolean;
+  amount?: number;
+  taxAmount?: number;
   deliveryDate: Date | null;
   pickupLocation: string;
   poNumber: string;
@@ -43,6 +45,7 @@ interface Order {
   comments: string;
   totalPrice: number;
   taxEnabled: boolean;
+  taxAmount?: number;
 }
 
 export default function OrderDetails() {
@@ -146,8 +149,19 @@ export default function OrderDetails() {
                   <tbody>
                     {order?.products.map((product: Product, index: number) => {
                       const productSubtotal = product.price * product.quantity;
-                      const productTaxAmount = product.taxEnabled ? productSubtotal * TAX_RATE : 0;
+                      // Prefer the server-stored tax; fall back to a 6% recompute
+                      // for legacy orders saved before per-line tax was stored.
+                      const productTaxAmount =
+                        product.taxAmount != null
+                          ? product.taxAmount
+                          : product.taxEnabled
+                            ? productSubtotal * TAX_RATE
+                            : 0;
                       const productTotal = productSubtotal + productTaxAmount;
+                      const taxRatePct =
+                        productSubtotal > 0 && productTaxAmount > 0
+                          ? Number(((productTaxAmount / productSubtotal) * 100).toFixed(2))
+                          : 0;
 
                       return (
                         <tr key={index} className="border-b border-gray-100">
@@ -164,7 +178,7 @@ export default function OrderDetails() {
                           <td className="p-4">{product.productId.description}</td>
                           <td className="p-4">$ {product.price}</td>
                           <td className="p-4 ">{product.quantity}</td>
-                          <td className="p-4">{product.taxEnabled ? "6%" : "0%"}</td>
+                          <td className="p-4">{taxRatePct > 0 ? `${taxRatePct}%` : "0%"}</td>
                           <td className="p-4">${productTaxAmount.toFixed(2)}</td>
                           <td className="p-4">${productTotal.toFixed(2)}</td>
                         </tr>
@@ -192,6 +206,21 @@ export default function OrderDetails() {
                       </td>
                       <td className="p-4" colSpan={2}>
                         ${order?.products.reduce((sum: number, product: Product) => sum + product.price * product.quantity, 0).toFixed(2)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colSpan={3}></td>
+                      <td colSpan={2} className="p-2 text-right font-medium">
+                        Total Tax:
+                      </td>
+                      <td className="p-4" colSpan={2}>
+                        ${(order?.products.reduce((sum: number, product: Product) => {
+                          const sub = product.price * product.quantity;
+                          const t = product.taxAmount != null
+                            ? product.taxAmount
+                            : product.taxEnabled ? sub * TAX_RATE : 0;
+                          return sum + t;
+                        }, 0) ?? 0).toFixed(2)}
                       </td>
                     </tr>
                     <tr>

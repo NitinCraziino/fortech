@@ -27,6 +27,17 @@ const OrderSchema = new mongoose.Schema(
           required: true,
           default: false
         },
+        // Server-computed line values, stored so order views show the exact
+        // tax that was applied (per-product or customer-level) without
+        // recomputing on the client.
+        amount: {
+          type: Number,
+          default: 0
+        },
+        taxAmount: {
+          type: Number,
+          default: 0
+        },
       }
     ],
     userId: {type: mongoose.Schema.Types.ObjectId, ref: "User", required: true},

@@ -119,9 +119,26 @@ export default function CreateOrder() {
     setTotalPrice(total);
   };
 
-  const getTaxedAmount = (taxEnabled: boolean, productAmount: number) => {
-    if (!taxEnabled) return 0;
-    return Number((productAmount * TAX_RATE).toFixed(2));
+  // Effective tax rate (decimal) for a product, mirroring the server rule:
+  // a product's own tax flag wins (TAX_RATE / 6%); otherwise the customer's
+  // own tax rate applies as the default when the customer has tax enabled.
+  const getEffectiveTaxRate = (productTaxEnabled: boolean): number => {
+    if (productTaxEnabled) return TAX_RATE;
+    if (user?.taxEnabled) return (Number(user.taxAmount) || 0) / 100;
+    return 0;
+  };
+
+  const getTaxedAmount = (productTaxEnabled: boolean, productAmount: number) => {
+    return Number((productAmount * getEffectiveTaxRate(productTaxEnabled)).toFixed(2));
+  };
+
+  // Human-readable rate shown in the preview, e.g. "6%" or the customer's rate.
+  const getTaxLabel = (row: ProductRow): string => {
+    if (row.taxEnabled) return "6%";
+    if (row.productId && user?.taxEnabled && (Number(user.taxAmount) || 0) > 0) {
+      return `${user.taxAmount}%`;
+    }
+    return "0";
   };
 
   // Update amount only calculates price * quantity without tax
@@ -136,7 +153,7 @@ export default function CreateOrder() {
     if (orderProducts.length) {
       const rowData: ProductRow[] = orderProducts.map((product: Product) => {
         const amount = updateAmount(product.customerPrice, 1);
-        const taxAmount = product.taxEnabled ? getTaxedAmount(product.taxEnabled, amount) : 0;
+        const taxAmount = getTaxedAmount(product.taxEnabled, amount);
 
         return {
           price: product.customerPrice,
@@ -372,8 +389,8 @@ export default function CreateOrder() {
                     })()}
                   </div>
 
-                  <span>{row.taxEnabled ? "6%" : "0"}</span>
-                  <span>{row.taxEnabled ? `$${row.taxAmount.toFixed(2)}` : "$0.00"}</span>
+                  <span>{getTaxLabel(row)}</span>
+                  <span>${row.taxAmount.toFixed(2)}</span>
                   <Input className="w-full" value={`$${row.totalAmount.toFixed(2)}`} readOnly />
 
                   <Button
