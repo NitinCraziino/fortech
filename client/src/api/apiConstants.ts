@@ -23,6 +23,7 @@ export const IMPORTCUSTOMERPRODUCTS = "/product/importCustomerProducts";
 export const DELETECUSTOMERPRODUCTS = "/user/deleteCustomerProduct";
 export const ASSIGNPRODUCTSTOCUSTOMERS = "/product/assignToCustomers";
 export const TOGGLETAXSETTING = "/user/toggleTaxSetting";
+export const UPDATECUSTOMERTAX = "/user/updateCustomerTax";
 export const GETCUSTOMER = "/user/getCustomer/:id";
 export const TOGGLEPRODUCTTAXSTATUS = "/product/toggleTaxSetting";
 export const TOGGLEPRODUCTSTOCKSTATUS = "/product/toggleStockStatus";

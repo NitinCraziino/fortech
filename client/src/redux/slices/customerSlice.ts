@@ -1,6 +1,6 @@
 // src/redux/slices/authSlice.ts
-import { getApi, patchApi, postApi } from "@/api/api";
-import { INVITECUSTOMER, GETCUSTOMERS, DELETECUSTOMERPRODUCTS, TOGGLETAXSETTING, GETCUSTOMER, UPDATECUSTOMERNAMEANDEMAIL } from "@/api/apiConstants";
+import { getApi, patchApi, postApi, putApi } from "@/api/api";
+import { INVITECUSTOMER, GETCUSTOMERS, DELETECUSTOMERPRODUCTS, GETCUSTOMER, UPDATECUSTOMERNAMEANDEMAIL, UPDATECUSTOMERTAX } from "@/api/apiConstants";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
 // Define an interface for your Auth state
@@ -66,11 +66,15 @@ export const updateCustomerNameAndEmailAsync = createAsyncThunk(
   }
 )
 
-export const updateCustomerTaxStatusAsync = createAsyncThunk(
-  "customer/updateCustomerTaxStatus",
-  async ({ customerId, status }: { customerId: string, status: boolean }, { rejectWithValue }) => {
+// Update the customer-level tax setting (enable/disable + the tax rate %).
+export const updateCustomerTaxAsync = createAsyncThunk(
+  "customer/updateCustomerTax",
+  async (
+    { customerId, taxEnabled, taxAmount }: { customerId: string; taxEnabled: boolean; taxAmount: number },
+    { rejectWithValue }
+  ) => {
     try {
-      const response = await postApi(TOGGLETAXSETTING, { status, customerId}, {}, false);
+      const response = await putApi(UPDATECUSTOMERTAX, { customerId, taxEnabled, taxAmount }, {}, false);
 
       return response.customer;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -78,7 +82,7 @@ export const updateCustomerTaxStatusAsync = createAsyncThunk(
       const message = error?.response?.data.message
       console.log("🚀 ~ error:", error.response.data.message)
       // Return error in case of failure
-      return rejectWithValue(message ? message : "Error getting customers. Please try again.");
+      return rejectWithValue(message ? message : "Error updating customer tax. Please try again.");
     }
 
   }
@@ -194,15 +198,16 @@ const customerSlice = createSlice({
       });
 
       builder
-      .addCase(updateCustomerTaxStatusAsync.fulfilled, (state, action) => {
+      .addCase(updateCustomerTaxAsync.fulfilled, (state, action) => {
+        state.loading = false;
         state.customer = action.payload;
-      }) 
+      })
       builder
-      .addCase(updateCustomerTaxStatusAsync.pending, (state) => {
+      .addCase(updateCustomerTaxAsync.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(updateCustomerTaxStatusAsync.rejected, (state, action) => {
+      .addCase(updateCustomerTaxAsync.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
