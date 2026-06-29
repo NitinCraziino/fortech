@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronsUpDown, Eye, PencilIcon, CheckCircle, XCircle, MailIcon } from "lucide-react";
+import { ChevronsUpDown, Eye, PencilIcon, CheckCircle, XCircle, MailIcon, ShoppingBag } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,6 +73,12 @@ export function CustomersTable(props: any) {
   const handleReinviteCustomer = (customerId: string) => {
     if (props.onReinviteCustomer) {
       props.onReinviteCustomer(customerId);
+    }
+  };
+
+  const handleViewOrders = (customer: Customer) => {
+    if (props.onViewOrders) {
+      props.onViewOrders(customer);
     }
   };
 
@@ -224,6 +230,16 @@ export function CustomersTable(props: any) {
                 <Eye className="h-4 w-4" />
               </Button>
               <Button
+                onClick={() => handleViewOrders(customer)}
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                title="View orders"
+              >
+                <ShoppingBag className="h-4 w-4" />
+                <span className="sr-only">View Orders</span>
+              </Button>
+              <Button
                 onClick={() => handleEditClick(customer)}
                 variant="ghost"
                 size="icon"
@@ -231,7 +247,7 @@ export function CustomersTable(props: any) {
               >
                 <PencilIcon className="h-4 w-4" />
               </Button>
-              {!customer.active && (
+              {!customer.active ? (
                 <Button
                   onClick={() => handleReinviteCustomer(customer._id)}
                   variant="ghost"
@@ -241,6 +257,10 @@ export function CustomersTable(props: any) {
                   <MailIcon className="h-4 w-4 text-blue-600" />
                   <span className="sr-only">Resend Customer</span>
                 </Button>
+              ) : (
+                // Keep the reinvite slot reserved so the action icons stay
+                // aligned across rows whether or not the customer is active.
+                <span className="h-8 w-8" aria-hidden="true" />
               )}
             </div>
           );

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import React, { useEffect, useState } from "react";
 import { CustomersTable } from "./CustomersTable";
 import { InviteCustomerModal } from "../modals/InviteCustomerModal";
+import { CustomerOrdersModal } from "../modals/CustomerOrdersModal";
 import { useDispatch, useSelector } from "react-redux";
 import { getCustomersAsync, inviteCustomerAsync, updateCustomerNameAndEmailAsync } from "@/redux/slices/customerSlice";
 import { AppDispatch } from "@/store";
@@ -30,6 +31,8 @@ const Customers: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [ordersCustomer, setOrdersCustomer] = useState<Customer | null>(null);
+  const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
   const { errorToast, success } = useToastActions();
   const dispatch = useDispatch<AppDispatch>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -84,6 +87,18 @@ const Customers: React.FC = () => {
     setIsDialogOpen(true);
   };
 
+  const handleViewOrders = (customer: Customer) => {
+    setOrdersCustomer(customer);
+    setIsOrdersModalOpen(true);
+  };
+
+  const handleOrdersModalOpenChange = (open: boolean) => {
+    setIsOrdersModalOpen(open);
+    if (!open) {
+      setOrdersCustomer(null);
+    }
+  };
+
   const handleCloseModal = (open: boolean) => {
     setIsDialogOpen(open);
     if (!open) {
@@ -119,6 +134,7 @@ const Customers: React.FC = () => {
             customers={customers}
             onUpdateNameAndEmail={updateCustomerNameAndEmail}
             onReinviteCustomer={handleReinviteCustomer}
+            onViewOrders={handleViewOrders}
           />
           <Pagination
             currentPage={currentPage}
@@ -140,6 +156,11 @@ const Customers: React.FC = () => {
           customerToReinvite={selectedCustomer}
         />
       )}
+      <CustomerOrdersModal
+        open={isOrdersModalOpen}
+        onOpenChange={handleOrdersModalOpenChange}
+        customer={ordersCustomer}
+      />
     </>
   );
 };
