@@ -24,6 +24,14 @@ const createOrder = async (req, res) => {
     let totalTaxAmount = 0;
     let processedProducts = [];
 
+    // The per-product tax takes priority; the customer-level tax is the default.
+    // - If a product has its own tax flag enabled -> tax it at the default TAX_RATE.
+    // - Otherwise fall back to the customer-level tax (the customer's own rate,
+    //   when they have tax enabled).
+    // A product is untaxed only when both the product flag and customer tax are off.
+    const customerTaxEnabled = user.taxEnabled === true;
+    const customerTaxRate = customerTaxEnabled ? (Number(user.taxAmount) || 0) / 100 : 0;
+
     for (const product of products) {
       const {productId, quantity} = product;
 
@@ -39,11 +47,21 @@ const createOrder = async (req, res) => {
 
       // Use server-verified price from the database
       const verifiedPrice = customerProduct.price;
-      const taxEnabled = customerProduct.taxEnabled;
+
+      // Decide the effective tax: per-product flag wins, customer tax is the default.
+      let taxEnabled = false;
+      let taxRate = 0;
+      if (customerProduct.taxEnabled) {
+        taxEnabled = true;
+        taxRate = TAX_RATE;
+      } else if (customerTaxEnabled) {
+        taxEnabled = true;
+        taxRate = customerTaxRate;
+      }
 
       // Calculate amounts on server side
       const productAmount = verifiedPrice * quantity;
-      const productTaxAmount = taxEnabled ? Number((productAmount * TAX_RATE).toFixed(2)) : 0;
+      const productTaxAmount = taxEnabled ? Number((productAmount * taxRate).toFixed(2)) : 0;
 
       subtotal += productAmount;
       totalTaxAmount += productTaxAmount;
@@ -66,6 +84,7 @@ const createOrder = async (req, res) => {
       userId,
       products: processedProducts,
       totalPrice,
+      taxAmount: Number(totalTaxAmount.toFixed(2)),
       pickupLocation,
       poNumber,
       comments,

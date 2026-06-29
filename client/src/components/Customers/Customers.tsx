@@ -6,6 +6,7 @@ import React, { useEffect, useState } from "react";
 import { CustomersTable } from "./CustomersTable";
 import { InviteCustomerModal } from "../modals/InviteCustomerModal";
 import { CustomerOrdersModal } from "../modals/CustomerOrdersModal";
+import { CustomerTaxModal } from "../modals/CustomerTaxModal";
 import { useDispatch, useSelector } from "react-redux";
 import { getCustomersAsync, inviteCustomerAsync, updateCustomerNameAndEmailAsync } from "@/redux/slices/customerSlice";
 import { AppDispatch } from "@/store";
@@ -24,6 +25,8 @@ interface Customer {
   name: string;
   email: string;
   active: boolean;
+  taxEnabled?: boolean;
+  taxAmount?: number;
 }
 
 const Customers: React.FC = () => {
@@ -33,6 +36,8 @@ const Customers: React.FC = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [ordersCustomer, setOrdersCustomer] = useState<Customer | null>(null);
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
+  const [taxCustomer, setTaxCustomer] = useState<Customer | null>(null);
+  const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
   const { errorToast, success } = useToastActions();
   const dispatch = useDispatch<AppDispatch>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -99,6 +104,18 @@ const Customers: React.FC = () => {
     }
   };
 
+  const handleManageTax = (customer: Customer) => {
+    setTaxCustomer(customer);
+    setIsTaxModalOpen(true);
+  };
+
+  const handleTaxModalOpenChange = (open: boolean) => {
+    setIsTaxModalOpen(open);
+    if (!open) {
+      setTaxCustomer(null);
+    }
+  };
+
   const handleCloseModal = (open: boolean) => {
     setIsDialogOpen(open);
     if (!open) {
@@ -135,6 +152,7 @@ const Customers: React.FC = () => {
             onUpdateNameAndEmail={updateCustomerNameAndEmail}
             onReinviteCustomer={handleReinviteCustomer}
             onViewOrders={handleViewOrders}
+            onManageTax={handleManageTax}
           />
           <Pagination
             currentPage={currentPage}
@@ -160,6 +178,12 @@ const Customers: React.FC = () => {
         open={isOrdersModalOpen}
         onOpenChange={handleOrdersModalOpenChange}
         customer={ordersCustomer}
+      />
+      <CustomerTaxModal
+        open={isTaxModalOpen}
+        onOpenChange={handleTaxModalOpenChange}
+        customer={taxCustomer}
+        onSaved={() => dispatch(getCustomersAsync({}))}
       />
     </>
   );

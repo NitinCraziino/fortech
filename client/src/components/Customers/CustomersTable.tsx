@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronsUpDown, Eye, PencilIcon, CheckCircle, XCircle, MailIcon, ShoppingBag } from "lucide-react";
+import { ChevronsUpDown, Eye, PencilIcon, CheckCircle, XCircle, MailIcon, ShoppingBag, Percent } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,8 @@ export interface Customer {
   name: string;
   active: boolean;
   email: string;
+  taxEnabled?: boolean;
+  taxAmount?: number;
 };
 
 export function CustomersTable(props: any) {
@@ -79,6 +81,12 @@ export function CustomersTable(props: any) {
   const handleViewOrders = (customer: Customer) => {
     if (props.onViewOrders) {
       props.onViewOrders(customer);
+    }
+  };
+
+  const handleManageTax = (customer: Customer) => {
+    if (props.onManageTax) {
+      props.onManageTax(customer);
     }
   };
 
@@ -189,6 +197,18 @@ export function CustomersTable(props: any) {
         },
       },
       {
+        accessorKey: "taxEnabled",
+        header: "Tax",
+        cell: ({ row }) => {
+          const customer = row.original;
+          return customer.taxEnabled ? (
+            <span className="font-medium">{customer.taxAmount ?? 0}%</span>
+          ) : (
+            <span className="text-muted-foreground">Off</span>
+          );
+        },
+      },
+      {
         id: "actions",
         header: () => {
           return <div className="text-center">Actions</div>;
@@ -238,6 +258,16 @@ export function CustomersTable(props: any) {
               >
                 <ShoppingBag className="h-4 w-4" />
                 <span className="sr-only">View Orders</span>
+              </Button>
+              <Button
+                onClick={() => handleManageTax(customer)}
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                title="Manage tax"
+              >
+                <Percent className="h-4 w-4" />
+                <span className="sr-only">Manage Tax</span>
               </Button>
               <Button
                 onClick={() => handleEditClick(customer)}
