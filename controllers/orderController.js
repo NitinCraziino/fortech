@@ -32,17 +32,17 @@ const createOrder = async (req, res) => {
     const customerTaxEnabled = user.taxEnabled === true;
     const customerTaxRate = customerTaxEnabled ? (Number(user.taxAmount) || 0) / 100 : 0;
 
-    // ----- TAX DEBUG (temporary) -----
-    console.log("🧾 [TAX DEBUG] createOrder ───────────────────────");
-    console.log("🧾 [TAX DEBUG] customer:", {
-      _id: user._id?.toString(),
-      name: user.name,
-      email: user.email,
-      taxEnabled: user.taxEnabled,
-      taxAmount: user.taxAmount,
-    });
-    console.log("🧾 [n] customerTaxEnabled:", customerTaxEnabled, "| customerTaxRate:", customerTaxRate);
-    // ---------------------------------
+    // // ----- TAX DEBUG (temporary) -----
+    // console.log("🧾 [TAX DEBUG] createOrder ───────────────────────");
+    // console.log("🧾 [TAX DEBUG] customer:", {
+    //   _id: user._id?.toString(),
+    //   name: user.name,
+    //   email: user.email,
+    //   taxEnabled: user.taxEnabled,
+    //   taxAmount: user.taxAmount,
+    // });
+    // console.log("🧾 [n] customerTaxEnabled:", customerTaxEnabled, "| customerTaxRate:", customerTaxRate);
+    // // ---------------------------------
 
     for (const product of products) {
       const {productId, quantity} = product;
@@ -78,19 +78,19 @@ const createOrder = async (req, res) => {
       const productAmount = verifiedPrice * quantity;
       const productTaxAmount = taxEnabled ? Number((productAmount * taxRate).toFixed(2)) : 0;
 
-      // ----- TAX DEBUG (temporary) -----
-      console.log("🧾 [TAX DEBUG] product:", {
-        productId,
-        quantity,
-        verifiedPrice,
-        productTaxEnabled: customerProduct.taxEnabled,
-        appliedTaxEnabled: taxEnabled,
-        appliedTaxRate: taxRate,
-        productAmount,
-        productTaxAmount,
-        source: customerProduct.taxEnabled ? "per-product (6%)" : (customerTaxEnabled ? "customer-default" : "none"),
-      });
-      // ---------------------------------
+      // // ----- TAX DEBUG (temporary) -----
+      // console.log("🧾 [TAX DEBUG] product:", {
+      //   productId,
+      //   quantity,
+      //   verifiedPrice,
+      //   productTaxEnabled: customerProduct.taxEnabled,
+      //   appliedTaxEnabled: taxEnabled,
+      //   appliedTaxRate: taxRate,
+      //   productAmount,
+      //   productTaxAmount,
+      //   source: customerProduct.taxEnabled ? "per-product (6%)" : (customerTaxEnabled ? "customer-default" : "none"),
+      // });
+      // // ---------------------------------
 
       subtotal += productAmount;
       totalTaxAmount += productTaxAmount;
@@ -110,14 +110,14 @@ const createOrder = async (req, res) => {
     // Calculate final total
     const totalPrice = Number((subtotal + totalTaxAmount).toFixed(2));
 
-    // ----- TAX DEBUG (temporary) -----
-    console.log("🧾 [TAX DEBUG] totals:", {
-      subtotal: Number(subtotal.toFixed(2)),
-      totalTaxAmount: Number(totalTaxAmount.toFixed(2)),
-      totalPrice,
-    });
-    console.log("🧾 [TAX DEBUG] ───────────────────────────────────");
-    // ---------------------------------
+    // // ----- TAX DEBUG (temporary) -----
+    // console.log("🧾 [TAX DEBUG] totals:", {
+    //   subtotal: Number(subtotal.toFixed(2)),
+    //   totalTaxAmount: Number(totalTaxAmount.toFixed(2)),
+    //   totalPrice,
+    // });
+    // console.log("🧾 [TAX DEBUG] ───────────────────────────────────");
+    // // ---------------------------------
 
     const newOrder = new Order({
       userId,
