@@ -25,6 +25,7 @@ interface Product {
   taxEnabled: boolean;
   amount?: number;
   taxAmount?: number;
+  taxSource?: string;
   deliveryDate: Date | null;
   pickupLocation: string;
   poNumber: string;
@@ -178,7 +179,14 @@ export default function OrderDetails() {
                           <td className="p-4">{product.productId.description}</td>
                           <td className="p-4">$ {product.price}</td>
                           <td className="p-4 ">{product.quantity}</td>
-                          <td className="p-4">{taxRatePct > 0 ? `${taxRatePct}%` : "0%"}</td>
+                          <td className="p-4">
+                            <div className="flex flex-col leading-tight">
+                              <span>{taxRatePct > 0 ? `${taxRatePct}%` : "0%"}</span>
+                              {taxRatePct > 0 && product.taxSource && (
+                                <span className="text-xs text-muted-foreground">{product.taxSource}</span>
+                              )}
+                            </div>
+                          </td>
                           <td className="p-4">${productTaxAmount.toFixed(2)}</td>
                           <td className="p-4">${productTotal.toFixed(2)}</td>
                         </tr>

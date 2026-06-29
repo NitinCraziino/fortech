@@ -47,6 +47,7 @@ export interface ProductState {
   product: null | object;
   orderProducts: Array<Product>;
   customerPrices: Array<CustomerPrices>;
+  customerTax: { taxEnabled: boolean; taxAmount: number } | null;
 }
 
 // Define the initial state
@@ -57,6 +58,7 @@ const initialState: ProductState = {
   product: null,
   orderProducts: [],
   customerPrices: [],
+  customerTax: null,
 };
 
 // Create an async thunk to handle login
@@ -129,6 +131,7 @@ export const getCustomerProductsAsync = createAsyncThunk(
       // Assuming the response contains user data and token
       return {
         products: response.products,
+        customerTax: response.customerTax || null,
       };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
@@ -481,6 +484,7 @@ const productSlice = createSlice({
       .addCase(getCustomerProductsAsync.fulfilled, (state, action: PayloadAction<any>) => {
         state.loading = false;
         state.products = action.payload.products;
+        state.customerTax = action.payload.customerTax;
       })
       .addCase(getCustomerProductsAsync.rejected, (state, action) => {
         state.loading = false;

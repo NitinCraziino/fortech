@@ -63,12 +63,15 @@ const createOrder = async (req, res) => {
       // Decide the effective tax: per-product flag wins, customer tax is the default.
       let taxEnabled = false;
       let taxRate = 0;
+      let taxSource = "";
       if (customerProduct.taxEnabled) {
         taxEnabled = true;
         taxRate = TAX_RATE;
+        taxSource = "Product";
       } else if (customerTaxEnabled) {
         taxEnabled = true;
         taxRate = customerTaxRate;
+        taxSource = "Customer";
       }
 
       // Calculate amounts on server side
@@ -99,7 +102,8 @@ const createOrder = async (req, res) => {
         price: verifiedPrice,
         taxEnabled: taxEnabled,
         amount: productAmount,
-        taxAmount: productTaxAmount
+        taxAmount: productTaxAmount,
+        taxSource: taxSource
       });
     }
 

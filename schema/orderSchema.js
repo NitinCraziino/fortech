@@ -38,6 +38,11 @@ const OrderSchema = new mongoose.Schema(
           type: Number,
           default: 0
         },
+        // Where the applied tax came from: "Product", "Customer", or "" (none).
+        taxSource: {
+          type: String,
+          default: ""
+        },
       }
     ],
     userId: {type: mongoose.Schema.Types.ObjectId, ref: "User", required: true},
