@@ -33,6 +33,7 @@ const Customers: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [filterText, setFilterText] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [ordersCustomer, setOrdersCustomer] = useState<Customer | null>(null);
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
@@ -131,6 +132,11 @@ const Customers: React.FC = () => {
           <div className="relative w-full">
             <Input
               type="text"
+              value={filterText}
+              onChange={(e) => {
+                setFilterText(e.target.value);
+                setCurrentPage(1);
+              }}
               placeholder="Search"
               className="focus-visible:outline-none ps-10 !h-10"
             />
@@ -148,6 +154,8 @@ const Customers: React.FC = () => {
           <CustomersTable
             pageIndex={currentPage}
             pageSize={rowsPerPage}
+            filterText={filterText}
+            setFilterText={setFilterText}
             customers={customers}
             onUpdateNameAndEmail={updateCustomerNameAndEmail}
             onReinviteCustomer={handleReinviteCustomer}

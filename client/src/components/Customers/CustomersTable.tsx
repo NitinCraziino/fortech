@@ -311,7 +311,19 @@ export function CustomersTable(props: any) {
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    globalFilterFn: (row, columnId, filterValue) => {
+      const value = row.getValue(columnId);
+      if (typeof value === "string") {
+        return value.toLowerCase().includes(filterValue.toLowerCase());
+      }
+      if (typeof value === "number") {
+        return value.toString().includes(filterValue);
+      }
+      return false;
+    },
+    onGlobalFilterChange: props.setFilterText,
     state: {
+      globalFilter: props.filterText,
       sorting,
       columnFilters,
       columnVisibility,
