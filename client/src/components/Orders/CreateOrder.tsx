@@ -80,7 +80,7 @@ export default function CreateOrder() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error, loading } = useSelector((state: any) => state.order);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { products, orderProducts } = useSelector((state: any) => state.product);
+  const { products, orderProducts, customerTax } = useSelector((state: any) => state.product);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { user } = useSelector((state: any) => state.auth);
 
@@ -104,6 +104,17 @@ export default function CreateOrder() {
     dispatch(getCustomerProductsAsync({}));
   }, [dispatch]);
 
+  // ----- TAX DEBUG (temporary) -----
+  useEffect(() => {
+    console.log("🧾 [TAX DEBUG] CreateOrder customer tax (session vs fresh):", {
+      sessionTaxEnabled: user?.taxEnabled,
+      sessionTaxAmount: user?.taxAmount,
+      freshTaxEnabled: customerTax?.taxEnabled,
+      freshTaxAmount: customerTax?.taxAmount,
+    });
+  }, [user, customerTax]);
+  // ---------------------------------
+
   useEffect(() => {
     if (error) {
       errorToast(error);
@@ -119,9 +130,28 @@ export default function CreateOrder() {
     setTotalPrice(total);
   };
 
-  const getTaxedAmount = (taxEnabled: boolean, productAmount: number) => {
-    if (!taxEnabled) return 0;
-    return Number((productAmount * TAX_RATE).toFixed(2));
+  // Effective tax rate (decimal) for a product, mirroring the server rule:
+  // a product's own tax flag wins (TAX_RATE / 6%); otherwise the customer's
+  // own tax rate applies as the default when the customer has tax enabled.
+  // Uses customerTax fetched fresh on page load (not the saved login value).
+  const getEffectiveTaxRate = (productTaxEnabled: boolean): number => {
+    if (productTaxEnabled) return TAX_RATE;
+    if (customerTax?.taxEnabled) return (Number(customerTax.taxAmount) || 0) / 100;
+    return 0;
+  };
+
+  const getTaxedAmount = (productTaxEnabled: boolean, productAmount: number) => {
+    return Number((productAmount * getEffectiveTaxRate(productTaxEnabled)).toFixed(2));
+  };
+
+  // Rate + where it came from, shown in the preview so it's clear whether the
+  // tax is the product's own tax or the customer-level default tax.
+  const getTaxInfo = (row: ProductRow): { label: string; source: "Product" | "Customer" | "" } => {
+    if (row.taxEnabled) return { label: "6%", source: "Product" };
+    if (row.productId && customerTax?.taxEnabled && (Number(customerTax.taxAmount) || 0) > 0) {
+      return { label: `${customerTax.taxAmount}%`, source: "Customer" };
+    }
+    return { label: "0%", source: "" };
   };
 
   // Update amount only calculates price * quantity without tax
@@ -136,7 +166,7 @@ export default function CreateOrder() {
     if (orderProducts.length) {
       const rowData: ProductRow[] = orderProducts.map((product: Product) => {
         const amount = updateAmount(product.customerPrice, 1);
-        const taxAmount = product.taxEnabled ? getTaxedAmount(product.taxEnabled, amount) : 0;
+        const taxAmount = getTaxedAmount(product.taxEnabled, amount);
 
         return {
           price: product.customerPrice,
@@ -148,10 +178,21 @@ export default function CreateOrder() {
           totalAmount: amount + taxAmount
         };
       });
+      // ----- TAX DEBUG (temporary) -----
+      console.log("🧾 [TAX DEBUG] CreateOrder rows built from products:", rowData.map((r) => ({
+        productId: r.productId,
+        productTaxEnabled: r.taxEnabled,
+        effectiveRate: getEffectiveTaxRate(r.taxEnabled),
+        amount: r.amount,
+        taxAmount: r.taxAmount,
+        totalAmount: r.totalAmount,
+      })));
+      console.log("🧾 [TAX DEBUG] (rule: per-product tax=6%; else customer default rate if customerTax.taxEnabled)");
+      // ---------------------------------
       setRows(rowData);
       calculateTotal(rowData);
     }
-  }, [orderProducts]);
+  }, [orderProducts, customerTax]);
 
   const handleAddRow = () => {
     setRows([...rows, { ...INITIAL_ROW }]);
@@ -260,6 +301,16 @@ export default function CreateOrder() {
     if (!validateForm() || !validateProducts()) {
       return;
     }
+
+    // ----- TAX DEBUG (temporary) -----
+    console.log("🧾 [TAX DEBUG] CreateOrder submitting order payload:", {
+      userId: user?._id,
+      freshTaxEnabled: customerTax?.taxEnabled,
+      freshTaxAmount: customerTax?.taxAmount,
+      previewTotalPrice: totalPrice.toFixed(2),
+      rows,
+    });
+    // ---------------------------------
 
     try {
       await dispatch(
@@ -372,8 +423,18 @@ export default function CreateOrder() {
                     })()}
                   </div>
 
-                  <span>{row.taxEnabled ? "6%" : "0"}</span>
-                  <span>{row.taxEnabled ? `$${row.taxAmount.toFixed(2)}` : "$0.00"}</span>
+                  {(() => {
+                    const taxInfo = getTaxInfo(row);
+                    return (
+                      <span className="flex flex-col leading-tight">
+                        <span>{taxInfo.label}</span>
+                        {taxInfo.source && (
+                          <span className="text-xs text-muted-foreground">{taxInfo.source}</span>
+                        )}
+                      </span>
+                    );
+                  })()}
+                  <span>${row.taxAmount.toFixed(2)}</span>
                   <Input className="w-full" value={`$${row.totalAmount.toFixed(2)}`} readOnly />
 
                   <Button

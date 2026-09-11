@@ -87,6 +87,14 @@ const getAllProducts = async (req, res) => {
 
 const getCustomerProducts = async (req, res) => {
   try {
+    // req.user is loaded fresh from the DB on every request (passport-jwt), so
+    // this always reflects the customer's current tax setting — the client uses
+    // this instead of the value saved at login (which can go stale).
+    const customerTax = {
+      taxEnabled: req.user.taxEnabled === true,
+      taxAmount: req.user.taxAmount || 0,
+    };
+
     const customerProduct = await CustomerProduct.findOne({customerId: req.user._id})
       .populate("products.productId")
       .lean();
@@ -106,9 +114,9 @@ const getCustomerProducts = async (req, res) => {
           return 0;
         });
 
-      res.status(200).json({products});
+      res.status(200).json({products, customerTax});
     } else {
-      res.status(200).json({products: []});
+      res.status(200).json({products: [], customerTax});
     }
   } catch (error) {
     res.status(500).json({error: error.message || "Error getting products."});

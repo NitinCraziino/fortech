@@ -24,6 +24,26 @@ const createOrder = async (req, res) => {
     let totalTaxAmount = 0;
     let processedProducts = [];
 
+    // The per-product tax takes priority; the customer-level tax is the default.
+    // - If a product has its own tax flag enabled -> tax it at the default TAX_RATE.
+    // - Otherwise fall back to the customer-level tax (the customer's own rate,
+    //   when they have tax enabled).
+    // A product is untaxed only when both the product flag and customer tax are off.
+    const customerTaxEnabled = user.taxEnabled === true;
+    const customerTaxRate = customerTaxEnabled ? (Number(user.taxAmount) || 0) / 100 : 0;
+
+    // // ----- TAX DEBUG (temporary) -----
+    // console.log("🧾 [TAX DEBUG] createOrder ───────────────────────");
+    // console.log("🧾 [TAX DEBUG] customer:", {
+    //   _id: user._id?.toString(),
+    //   name: user.name,
+    //   email: user.email,
+    //   taxEnabled: user.taxEnabled,
+    //   taxAmount: user.taxAmount,
+    // });
+    // console.log("🧾 [n] customerTaxEnabled:", customerTaxEnabled, "| customerTaxRate:", customerTaxRate);
+    // // ---------------------------------
+
     for (const product of products) {
       const {productId, quantity} = product;
 
@@ -39,11 +59,38 @@ const createOrder = async (req, res) => {
 
       // Use server-verified price from the database
       const verifiedPrice = customerProduct.price;
-      const taxEnabled = customerProduct.taxEnabled;
+
+      // Decide the effective tax: per-product flag wins, customer tax is the default.
+      let taxEnabled = false;
+      let taxRate = 0;
+      let taxSource = "";
+      if (customerProduct.taxEnabled) {
+        taxEnabled = true;
+        taxRate = TAX_RATE;
+        taxSource = "Product";
+      } else if (customerTaxEnabled) {
+        taxEnabled = true;
+        taxRate = customerTaxRate;
+        taxSource = "Customer";
+      }
 
       // Calculate amounts on server side
       const productAmount = verifiedPrice * quantity;
-      const productTaxAmount = taxEnabled ? Number((productAmount * TAX_RATE).toFixed(2)) : 0;
+      const productTaxAmount = taxEnabled ? Number((productAmount * taxRate).toFixed(2)) : 0;
+
+      // // ----- TAX DEBUG (temporary) -----
+      // console.log("🧾 [TAX DEBUG] product:", {
+      //   productId,
+      //   quantity,
+      //   verifiedPrice,
+      //   productTaxEnabled: customerProduct.taxEnabled,
+      //   appliedTaxEnabled: taxEnabled,
+      //   appliedTaxRate: taxRate,
+      //   productAmount,
+      //   productTaxAmount,
+      //   source: customerProduct.taxEnabled ? "per-product (6%)" : (customerTaxEnabled ? "customer-default" : "none"),
+      // });
+      // // ---------------------------------
 
       subtotal += productAmount;
       totalTaxAmount += productTaxAmount;
@@ -55,17 +102,28 @@ const createOrder = async (req, res) => {
         price: verifiedPrice,
         taxEnabled: taxEnabled,
         amount: productAmount,
-        taxAmount: productTaxAmount
+        taxAmount: productTaxAmount,
+        taxSource: taxSource
       });
     }
 
     // Calculate final total
     const totalPrice = Number((subtotal + totalTaxAmount).toFixed(2));
 
+    // // ----- TAX DEBUG (temporary) -----
+    // console.log("🧾 [TAX DEBUG] totals:", {
+    //   subtotal: Number(subtotal.toFixed(2)),
+    //   totalTaxAmount: Number(totalTaxAmount.toFixed(2)),
+    //   totalPrice,
+    // });
+    // console.log("🧾 [TAX DEBUG] ───────────────────────────────────");
+    // // ---------------------------------
+
     const newOrder = new Order({
       userId,
       products: processedProducts,
       totalPrice,
+      taxAmount: Number(totalTaxAmount.toFixed(2)),
       pickupLocation,
       poNumber,
       comments,

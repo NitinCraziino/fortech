@@ -7,6 +7,11 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 export interface OrderState {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   orders: Array<any>;
+  // Orders for a single customer, shown in the customer-orders dialog.
+  // Kept separate from `orders` so it never clobbers the main Orders page state.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  customerOrders: Array<any>;
+  customerOrdersLoading: boolean;
   loading: boolean;
   error: string | null;
   order: null | object;
@@ -21,6 +26,8 @@ export interface OrderProduct {
 // Define the initial state
 const initialState: OrderState = {
   orders: [],
+  customerOrders: [],
+  customerOrdersLoading: false,
   loading: false,
   error: null,
   order: null,
@@ -89,6 +96,25 @@ export const getOrdersAsync = createAsyncThunk(
       console.log("🚀 ~ error:", error.response.data.message);
       // Return error in case of failure
       return rejectWithValue(message ? message : "Error getting orders. Please try again.");
+    }
+  }
+);
+
+// Fetch all orders for a single customer (used by the customer-orders dialog
+// on the customer listing page). Reuses the existing per-user orders endpoint
+// but stores the result in `customerOrders` so it doesn't affect the Orders page.
+export const getCustomerOrdersAsync = createAsyncThunk(
+  "order/getCustomerOrders",
+  async ({ customerId }: { customerId: string }, { rejectWithValue }) => {
+    try {
+      const response = await getApi(GETUSERORDERS.replace(":userId", customerId), {}, {}, false);
+      return {
+        orders: response.orders,
+      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      const message = error?.response?.data.message;
+      return rejectWithValue(message ? message : "Error getting customer orders. Please try again.");
     }
   }
 );
@@ -196,7 +222,14 @@ export const exportOrderAsync = createAsyncThunk(
 const orderSlice = createSlice({
   name: "order",
   initialState,
-  reducers: {},
+  reducers: {
+    // Reset the customer-orders dialog state when it closes so stale orders
+    // from a previously viewed customer don't flash on the next open.
+    clearCustomerOrders: (state) => {
+      state.customerOrders = [];
+      state.customerOrdersLoading = false;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(createOrderAsync.pending, (state) => {
@@ -258,6 +291,22 @@ const orderSlice = createSlice({
       });
 
     builder
+      .addCase(getCustomerOrdersAsync.pending, (state) => {
+        state.customerOrdersLoading = true;
+        state.error = null;
+      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .addCase(getCustomerOrdersAsync.fulfilled, (state, action: PayloadAction<any>) => {
+        state.customerOrdersLoading = false;
+        state.customerOrders = action.payload.orders;
+      })
+      .addCase(getCustomerOrdersAsync.rejected, (state, action) => {
+        state.customerOrdersLoading = false;
+        state.customerOrders = [];
+        state.error = action.payload as string;
+      });
+
+    builder
       .addCase(getOrderById.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -273,5 +322,7 @@ const orderSlice = createSlice({
       });
   },
 });
+
+export const { clearCustomerOrders } = orderSlice.actions;
 
 export default orderSlice.reducer;

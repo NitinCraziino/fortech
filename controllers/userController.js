@@ -17,21 +17,40 @@ const hashPassword = async (password) => {
   }
 };
 
-const toggleTaxSetting = async (req, res) => {
+// Update the customer-level tax setting (enable/disable + the tax rate %).
+// When enabled, this rate is applied to the customer's orders and overrides
+// the per-product tax (see orderController.createOrder).
+const updateCustomerTaxSetting = async (req, res) => {
   try {
-    const { customerId, status } = req.body;
-    console.log("🚀 ~ toggleTaxSetting ~ taxEnabled:", status)
+    if (!req.user.admin) {
+      return res.status(400).json({ error: "Invalid Permissions" });
+    }
 
-    // Find the customer by ID  
-    const customer = await User.findById(customerId);
+    const { customerId, taxEnabled, taxAmount } = req.body;
+
+    if (typeof taxEnabled !== "boolean") {
+      return res.status(400).json({ error: "taxEnabled must be a boolean" });
+    }
+
+    // Only validate the amount when tax is being enabled.
+    let normalizedTaxAmount = 0;
+    if (taxEnabled) {
+      normalizedTaxAmount = Number(taxAmount);
+      if (isNaN(normalizedTaxAmount) || normalizedTaxAmount < 0 || normalizedTaxAmount > 100) {
+        return res.status(400).json({ error: "taxAmount must be a number between 0 and 100" });
+      }
+    }
+
+    const customer = await User.findOneAndUpdate(
+      { _id: customerId, admin: false },
+      { taxEnabled, taxAmount: normalizedTaxAmount },
+      { new: true }
+    ).select("-password");
+
     if (!customer) {
       return res.status(400).json({ error: "Customer not found" });
     }
 
-    // Update the taxEnabled field
-    customer.taxEnabled = status; 
-    await customer.save();
-    console.log("🚀 ~ toggleTaxSetting ~ customer:", customer)
     res.status(200).json({ message: "Tax setting updated successfully", customer });
   } catch (error) {
     console.error("Error updating tax setting:", error);
@@ -274,7 +293,7 @@ const updateCustomerNameAndEmail = async (req, res) => {
 }
 
 module.exports = {
-  toggleTaxSetting,
+  updateCustomerTaxSetting,
   createAdmin,
   inviteCustomer,
   setPassword,

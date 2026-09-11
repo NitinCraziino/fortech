@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import React, { useEffect, useState } from "react";
 import { CustomersTable } from "./CustomersTable";
 import { InviteCustomerModal } from "../modals/InviteCustomerModal";
+import { CustomerOrdersModal } from "../modals/CustomerOrdersModal";
+import { CustomerTaxModal } from "../modals/CustomerTaxModal";
 import { useDispatch, useSelector } from "react-redux";
 import { getCustomersAsync, inviteCustomerAsync, updateCustomerNameAndEmailAsync } from "@/redux/slices/customerSlice";
 import { AppDispatch } from "@/store";
@@ -23,13 +25,20 @@ interface Customer {
   name: string;
   email: string;
   active: boolean;
+  taxEnabled?: boolean;
+  taxAmount?: number;
 }
 
 const Customers: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [filterText, setFilterText] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [ordersCustomer, setOrdersCustomer] = useState<Customer | null>(null);
+  const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
+  const [taxCustomer, setTaxCustomer] = useState<Customer | null>(null);
+  const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
   const { errorToast, success } = useToastActions();
   const dispatch = useDispatch<AppDispatch>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -84,6 +93,30 @@ const Customers: React.FC = () => {
     setIsDialogOpen(true);
   };
 
+  const handleViewOrders = (customer: Customer) => {
+    setOrdersCustomer(customer);
+    setIsOrdersModalOpen(true);
+  };
+
+  const handleOrdersModalOpenChange = (open: boolean) => {
+    setIsOrdersModalOpen(open);
+    if (!open) {
+      setOrdersCustomer(null);
+    }
+  };
+
+  const handleManageTax = (customer: Customer) => {
+    setTaxCustomer(customer);
+    setIsTaxModalOpen(true);
+  };
+
+  const handleTaxModalOpenChange = (open: boolean) => {
+    setIsTaxModalOpen(open);
+    if (!open) {
+      setTaxCustomer(null);
+    }
+  };
+
   const handleCloseModal = (open: boolean) => {
     setIsDialogOpen(open);
     if (!open) {
@@ -99,6 +132,11 @@ const Customers: React.FC = () => {
           <div className="relative w-full">
             <Input
               type="text"
+              value={filterText}
+              onChange={(e) => {
+                setFilterText(e.target.value);
+                setCurrentPage(1);
+              }}
               placeholder="Search"
               className="focus-visible:outline-none ps-10 !h-10"
             />
@@ -116,9 +154,13 @@ const Customers: React.FC = () => {
           <CustomersTable
             pageIndex={currentPage}
             pageSize={rowsPerPage}
+            filterText={filterText}
+            setFilterText={setFilterText}
             customers={customers}
             onUpdateNameAndEmail={updateCustomerNameAndEmail}
             onReinviteCustomer={handleReinviteCustomer}
+            onViewOrders={handleViewOrders}
+            onManageTax={handleManageTax}
           />
           <Pagination
             currentPage={currentPage}
@@ -140,6 +182,17 @@ const Customers: React.FC = () => {
           customerToReinvite={selectedCustomer}
         />
       )}
+      <CustomerOrdersModal
+        open={isOrdersModalOpen}
+        onOpenChange={handleOrdersModalOpenChange}
+        customer={ordersCustomer}
+      />
+      <CustomerTaxModal
+        open={isTaxModalOpen}
+        onOpenChange={handleTaxModalOpenChange}
+        customer={taxCustomer}
+        onSaved={() => dispatch(getCustomersAsync({}))}
+      />
     </>
   );
 };
