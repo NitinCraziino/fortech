@@ -1,0 +1,79 @@
+{
+  "users": [
+    {
+      "_id": "6ab3937289c9c5d046178a95",
+      "name": "new test costomer",
+      "email": "alskjfasd@mailinator.com",
+      "active": false,
+      "admin": false,
+      "taxEnabled": false,
+      "taxAmount": 0,
+      "createdAt": "2026-09-23T08:53:06.613Z",
+      "updatedAt": "2026-09-23T08:53:06.613Z",
+      "__v": 0
+    },
+    {
+      "_id": "6ab3926689c9c5d046178a90",
+      "name": "tester 2",
+      "email": "invite@mailinator.com",
+      "active": false,
+      "admin": false,
+      "taxEnabled": false,
+      "taxAmount": 0,
+      "createdAt": "2026-09-23T08:48:38.450Z",
+      "updatedAt": "2026-09-23T08:48:38.450Z",
+      "__v": 0
+    },
+    {
+      "_id": "6ab394a889c9c5d046178aa3",
+      "name": "new cc",
+      "email": "newcccc@mailinator.com",
+      "active": false,
+      "admin": false,
+      "taxEnabled": false,
+      "taxAmount": 0,
+      "createdAt": "2026-09-23T08:58:16.852Z",
+      "updatedAt": "2026-09-23T08:58:16.852Z",
+      "__v": 0
+    },
+    {
+      "_id": "6ab394bc576453d8f01ec8d5",
+      "name": "new cc",
+      "email": "newssss@mailinator.com",
+      "active": false,
+      "admin": false,
+      "taxEnabled": false,
+      "taxAmount": 0,
+      "createdAt": "2026-09-23T08:58:36.486Z",
+      "updatedAt": "2026-09-23T08:58:36.486Z",
+      "__v": 0
+    },
+    {
+      "_id": "6ab38d9333d6a84bb9960bc0",
+      "name": "Testing invite issue",
+      "email": "sinnn@mailinator.com",
+      "active": false,
+      "admin": false,
+      "taxEnabled": false,
+      "taxAmount": 0,
+      "createdAt": "2026-09-23T08:28:03.254Z",
+      "updatedAt": "2026-09-23T08:30:13.084Z",
+      "__v": 0
+    },
+    {
+      "_id": "6ab3938e89c9c5d046178a9c",
+      "name": "ssss",
+      "email": "sss@mailinator.com",
+      "active": false,
+      "admin": false,
+      "taxEnabled": false,
+      "taxAmount": 0,
+      "createdAt": "2026-09-23T08:53:34.531Z",
+      "updatedAt": "2026-09-23T08:53:34.531Z",
+      "__v": 0
+    }
+  ],
+  "orders": [],
+  "customerproducts": [],
+  "customerprices": []
+}
