@@ -63,6 +63,8 @@ const Customers: React.FC = () => {
         await dispatch(inviteCustomerAsync(formData)).unwrap();
         success("Invitation sent successfully.");
       }
+      // Pull the list again so the new/updated row shows the latest data.
+      await dispatch(getCustomersAsync({}));
       setIsDialogOpen(false);
       setSelectedCustomer(null);
     } catch (error) {

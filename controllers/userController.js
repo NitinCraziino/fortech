@@ -125,8 +125,10 @@ const inviteCustomer = async (req, res) => {
         .replace('[SETPASSWORDLINK]', `https://www.naisorders.com/set-password/${savedUser._id}`),
     });
 
+    console.log(`[invite] responding 200 for ${savedUser.email} (${req.body.customerId ? "resend" : "new"})`);
     res.status(200).json({ customer: savedUser });
   } catch (error) {
+    console.error("[invite] FAILED:", error);
     res.status(500).json({error: error.message || "Error processing customer invitation"});
   }
 };

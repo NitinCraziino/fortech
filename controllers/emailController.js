@@ -7,8 +7,14 @@ const sendEmail = async ({ to, subject, html, from }) => {
   try {
     const msg = { to, from, subject, html };
     await sgMail.send(msg);
+    console.log(`[email] sent to ${to} ("${subject}")`);
     return true;
   } catch (error) {
+    // SendGrid puts the real reason in error.response.body.
+    console.error(
+      `[email] FAILED to ${to} ("${subject}"):`,
+      error?.response?.body ? JSON.stringify(error.response.body) : error?.message
+    );
     return false;
   }
 };

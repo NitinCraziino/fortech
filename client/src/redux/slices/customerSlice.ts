@@ -42,8 +42,8 @@ export const inviteCustomerAsync = createAsyncThunk(
       };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      const message = error?.response?.data.message
-      console.log("🚀 ~ error:", error.response.data.message)
+      const message = error?.message;
+      console.log("🚀 ~ inviteCustomerAsync ~ error:", error);
       // Return error in case of failure
       return rejectWithValue(message ? message : "Invite failed. Please try again.");
     }
@@ -59,8 +59,8 @@ export const updateCustomerNameAndEmailAsync = createAsyncThunk(
       return response;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      const message = error?.response?.data.message;
-      console.log("🚀 ~ error:", error.response.data.message);
+      const message = error?.message;
+      console.log("🚀 ~ error:", error);
       return rejectWithValue(message ? message : "Error updaitn customer name. Please try again.");
     }
   }
@@ -79,8 +79,8 @@ export const updateCustomerTaxAsync = createAsyncThunk(
       return response.customer;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      const message = error?.response?.data.message
-      console.log("🚀 ~ error:", error.response.data.message)
+      const message = error?.message
+      console.log("🚀 ~ error:", error);
       // Return error in case of failure
       return rejectWithValue(message ? message : "Error updating customer tax. Please try again.");
     }
@@ -99,8 +99,8 @@ export const getCustomerAsync = createAsyncThunk(
       };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      const message = error?.response?.data.message
-      console.log("🚀 ~ error:", error.response.data.message)
+      const message = error?.message
+      console.log("🚀 ~ error:", error);
       // Return error in case of failure
       return rejectWithValue(message ? message : "Error getting customer. Please try again.");
     }
@@ -121,8 +121,8 @@ export const getCustomersAsync = createAsyncThunk(
         };
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
-        const message = error?.response?.data.message
-        console.log("🚀 ~ error:", error.response.data.message)
+        const message = error?.message
+        console.log("🚀 ~ error:", error);
         // Return error in case of failure
         return rejectWithValue(message ? message : "Error getting customers. Please try again.");
       }
@@ -139,7 +139,7 @@ export const getCustomersAsync = createAsyncThunk(
         return true;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
-        const message = error?.response?.data.message; // Return error in case of failure
+        const message = error?.message; // Return error in case of failure
         return rejectWithValue(message ? message : "Delete failed. Please try again.");
       }
     }
@@ -160,7 +160,17 @@ const customerSlice = createSlice({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .addCase(inviteCustomerAsync.fulfilled, (state, action: PayloadAction<any>) => {
         state.loading = false;
-        state.customers.push(action.payload.customer) 
+        const customer = action.payload.customer;
+        if (!customer) return;
+        // A resend returns a customer that is already in the list, so update
+        // that row instead of adding a duplicate one.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const index = state.customers.findIndex((c: any) => c._id === customer._id);
+        if (index === -1) {
+          state.customers.push(customer);
+        } else {
+          state.customers[index] = customer;
+        }
       })
       .addCase(inviteCustomerAsync.rejected, (state, action) => {
         state.loading = false;

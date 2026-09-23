@@ -23,7 +23,7 @@ api.interceptors.response.use(
     console.error("API call error:", error);
     const responseError = {
       statusCode: error.response?.status || 500,
-      message: error.response?.data?.message || "Something went wrong",
+      message: error.response?.data?.message || error.response?.data?.error || "Something went wrong",
       errors: error.response?.data?.errors || null,
     };
     if (error.response?.status === 401) {

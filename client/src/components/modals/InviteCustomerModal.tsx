@@ -23,7 +23,7 @@ interface FormData {
 interface InviteCustomerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  inviteCustomer: (formData: FormData) => void;
+  inviteCustomer: (formData: FormData) => void | Promise<void>;
   customerToReinvite: Customer | null;
 }
 
@@ -97,7 +97,7 @@ export function InviteCustomerModal({
     }
   }, [open, customerToReinvite]);
 
-  const handleSubmit = (e: React.FormEvent): void => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     const newErrors: FormErrors = {};
     Object.keys(formData).forEach((key) => {
@@ -113,7 +113,7 @@ export function InviteCustomerModal({
     if (Object.keys(newErrors).length === 0) {
       setIsSubmitting(true);
       try {
-        inviteCustomer(formData);
+        await inviteCustomer(formData);
       } catch (error) {
         console.error("Invite error:", error);
       } finally {
@@ -229,7 +229,7 @@ export function InviteCustomerModal({
               type="submit"
               className="w-full mt-1"
             >
-              {buttonText}
+              {isSubmitting ? "Sending..." : buttonText}
             </Button>
           </form>
         </div>
