@@ -714,7 +714,120 @@ const bulkToggleCustomerProductFavoriteStatus = async (req, res) => {
 };
 
 
+// Which customers have this product on their item list, and at what price.
+// Used by the "Change prices" popup on the Products page so the admin can
+// see the current price per customer before changing it.
+const getProductCustomerPrices = async (req, res) => {
+  try {
+    if (!req.user.admin) return res.status(400).json({error: "Invalid Permissions"});
+
+    const {productId} = req.params;
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({error: "Invalid product"});
+    }
+
+    const docs = await CustomerProduct.find({"products.productId": productId})
+      .select("customerId products.productId products.price")
+      .lean();
+
+    const prices = docs.map((doc) => {
+      const row = doc.products.find((p) => p.productId.toString() === productId);
+      return {customerId: doc.customerId, price: row ? row.price : null};
+    });
+
+    res.status(200).json({prices});
+  } catch (error) {
+    res.status(500).json({error: error.message || "Error getting customer prices."});
+  }
+};
+
+// Change one product's customer price for many customers at once.
+// mode "fixed": every selected customer gets price = value.
+// mode "percent": every selected customer's current price changes by value %
+// (e.g. 5 = +5%, -10 = -10%). Customers who do not have the product on their
+// list are skipped and reported back, nothing is added to their list.
+const bulkUpdateCustomerPrices = async (req, res) => {
+  try {
+    if (!req.user.admin) return res.status(400).json({error: "Invalid Permissions"});
+
+    const {productId, customerIds, mode} = req.body;
+    const value = Number(req.body.value);
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({error: "Invalid product"});
+    }
+    if (!Array.isArray(customerIds) || customerIds.length === 0) {
+      return res.status(400).json({error: "Select at least one customer"});
+    }
+    if (!customerIds.every((id) => mongoose.Types.ObjectId.isValid(id))) {
+      return res.status(400).json({error: "Invalid customer"});
+    }
+    if (mode !== "fixed" && mode !== "percent") {
+      return res.status(400).json({error: "mode must be 'fixed' or 'percent'"});
+    }
+    if (!Number.isFinite(value)) {
+      return res.status(400).json({error: "Enter a valid number"});
+    }
+    if (mode === "fixed" && value < 0) {
+      return res.status(400).json({error: "Price cannot be negative"});
+    }
+    if (mode === "percent" && value <= -100) {
+      return res.status(400).json({error: "Percentage must be greater than -100"});
+    }
+
+    const product = await Product.findOne({_id: productId, isDeleted: {$ne: true}}).lean();
+    if (!product) {
+      return res.status(400).json({error: "Product not found"});
+    }
+
+    const customers = await User.find({
+      _id: {$in: customerIds},
+      admin: false,
+      isDeleted: {$ne: true},
+    }).select("name").lean();
+    if (customers.length !== new Set(customerIds.map(String)).size) {
+      return res.status(400).json({error: "One or more customers not found"});
+    }
+    const nameById = Object.fromEntries(customers.map((c) => [c._id.toString(), c.name]));
+
+    const docs = await CustomerProduct.find({
+      customerId: {$in: customerIds},
+      "products.productId": productId,
+    }).lean();
+
+    const ops = [];
+    const updated = [];
+    for (const doc of docs) {
+      const row = doc.products.find((p) => p.productId.toString() === productId);
+      if (!row) continue;
+      const oldPrice = Number(row.price) || 0;
+      const newPrice = mode === "fixed"
+        ? Number(value.toFixed(2))
+        : Number((oldPrice * (1 + value / 100)).toFixed(2));
+      ops.push({
+        updateOne: {
+          filter: {_id: doc._id, "products.productId": row.productId},
+          update: {$set: {"products.$.price": newPrice}},
+        },
+      });
+      updated.push({customerId: doc.customerId, name: nameById[doc.customerId.toString()], oldPrice, newPrice});
+    }
+    if (ops.length) await CustomerProduct.bulkWrite(ops);
+
+    const updatedIds = new Set(updated.map((u) => u.customerId.toString()));
+    const skipped = customerIds
+      .filter((id) => !updatedIds.has(String(id)))
+      .map((id) => ({customerId: id, name: nameById[String(id)]}));
+
+    res.status(200).json({updated, skipped});
+  } catch (error) {
+    res.status(500).json({error: error.message || "Error updating prices."});
+  }
+};
+
 module.exports = {
+  getProductCustomerPrices,
+  bulkUpdateCustomerPrices,
   createProduct,
   deleteProduct,
   updateProductStatus,

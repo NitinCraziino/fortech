@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronsUpDown, Eye, Pencil, Heart, Trash2 } from "lucide-react";
+import { ChevronsUpDown, Eye, Pencil, Heart, Trash2, Tags } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -59,6 +59,7 @@ export const ProductsTable = (props: {
   pageSize: number;
   updateFavoriteStatus: (isFavorite: boolean, _id: string) => void;
   deleteProduct: (_id: string) => void;
+  changePrices: (product: Product) => void;
 }) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -232,6 +233,16 @@ export const ProductsTable = (props: {
                     className="h-8 w-8"
                   >
                     <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    onClick={() => props.changePrices(product)}
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    title="Change customer prices"
+                  >
+                    <Tags className="h-4 w-4" />
+                    <span className="sr-only">Change customer prices</span>
                   </Button>
                   <Button
                     onClick={() => setDeletingProduct(product)}

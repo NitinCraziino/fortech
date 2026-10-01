@@ -35,3 +35,5 @@ export const TOGGLECUSTOMERPRODUCTFAVORITESTATUS = "/product/toggleCustomerProdu
 export const TOGGLEBULKCUSTOMERPRODUCTFAVORITESTATUS = "/product/toggleBulkCustomerProductFavorite";
 export const DELETEPRODUCT = "/product/:productId";
 export const DELETECUSTOMER = "/user/deleteCustomer/:id";
+export const GETPRODUCTCUSTOMERPRICES = "/product/:productId/customerPrices";
+export const BULKUPDATECUSTOMERPRICES = "/product/bulkUpdateCustomerPrices";

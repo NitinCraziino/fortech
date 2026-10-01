@@ -24,6 +24,7 @@ import { AppDispatch } from "@/store";
 import { useToastActions } from "@/lib/utils";
 import { Spinner } from "../ui/spinner";
 import BulkAssignModal from "../modals/BulkAssignModal";
+import BulkPriceChangeModal from "../modals/BulkPriceChangeModal";
 import { Pagination } from "../Pagination/Pagination";
 
 export interface Product {
@@ -185,6 +186,7 @@ const Products = () => {
     }
   };
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [pricingProduct, setPricingProduct] = useState<Product | null>(null);
   return (
     <div className="p-6">
       <Spinner show={loading} fullScreen />
@@ -272,6 +274,7 @@ const Products = () => {
           updateStockStatus={handleStockStatusUpdate}
           updateFavoriteStatus={handleFavoriteStatusUpdate}
           deleteProduct={handleDeleteProduct}
+          changePrices={setPricingProduct}
           selectAll={(isSelected) => {
             if (isSelected) {
               setAllSelected(true);
@@ -315,6 +318,15 @@ const Products = () => {
           onOpenChange={setIsAssignModalOpen}
           setSelectedProducts={setSelectedProducts}
           selectedProducts={selectedProducts}
+        />
+      )}
+      {pricingProduct && (
+        <BulkPriceChangeModal
+          open={pricingProduct !== null}
+          onOpenChange={(open) => {
+            if (!open) setPricingProduct(null);
+          }}
+          product={pricingProduct}
         />
       )}
     </div>
