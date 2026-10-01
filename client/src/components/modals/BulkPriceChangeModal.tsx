@@ -139,7 +139,7 @@ const BulkPriceChangeModal: React.FC<BulkPriceChangeModalProps> = ({ open, onOpe
                   {mode === "fixed" && <span className="text-sm">$</span>}
                   <Input
                     type="number"
-                    className="w-28"
+                    className="w-40"
                     value={value}
                     onChange={(e) => setValue(e.target.value)}
                     placeholder={mode === "fixed" ? "New price" : "e.g. 5 or -10"}
@@ -172,7 +172,14 @@ const BulkPriceChangeModal: React.FC<BulkPriceChangeModalProps> = ({ open, onOpe
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 text-gray-600">
                       <tr>
-                        <th className="w-8"></th>
+                        <th className="w-8 p-2 text-center">
+                          <input
+                            type="checkbox"
+                            title={allSelected ? "Clear all" : "Select all"}
+                            checked={allSelected}
+                            onChange={toggleAll}
+                          />
+                        </th>
                         <th className="text-left p-2 font-medium">Customer</th>
                         <th className="text-right p-2 font-medium">Current</th>
                         <th className="text-right p-2 font-medium">New</th>
@@ -195,8 +202,8 @@ const BulkPriceChangeModal: React.FC<BulkPriceChangeModalProps> = ({ open, onOpe
                               </label>
                             </td>
                             <td className="p-2 text-right">{money(current)}</td>
-                            <td className={`p-2 text-right ${checked && next !== null ? "font-medium" : "text-gray-400"}`}>
-                              {checked && next !== null ? money(next) : "—"}
+                            <td className={`p-2 text-right ${next === null ? "text-gray-400" : checked ? "font-medium" : "text-gray-400"}`}>
+                              {next !== null ? money(next) : "—"}
                             </td>
                           </tr>
                         );
