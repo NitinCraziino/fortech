@@ -1,6 +1,7 @@
 const Order = require("../schema/orderSchema");
 const CustomerProduct = require("../schema/customerProductSchema")
 const User = require("../schema/userSchema");
+const Product = require("../schema/productSchema");
 const EmailTemplate = require("../schema/emailtemplateSchema");
 const {sendEmail} = require("./emailController");
 const {createObjectCsvWriter} = require("csv-writer");
@@ -52,8 +53,12 @@ const createOrder = async (req, res) => {
       );
 
       if (!customerProduct) {
+        // Usually the product was deleted (or removed from this customer)
+        // after the order page was opened.
+        const missing = await Product.findById(productId).lean();
+        const label = missing ? `"${missing.name}" (${missing.partNo})` : "One of the products";
         return res.status(400).json({
-          error: `Product with ID ${productId} not found in customer's product list.`
+          error: `${label} is no longer available. Please remove it from the order and try again.`
         });
       }
 

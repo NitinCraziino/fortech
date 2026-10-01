@@ -72,7 +72,7 @@ export const createOrderAsync = createAsyncThunk(
     } catch (error: any) {
       console.log("🚀 ~ error:", error);
 
-      const message = error?.response?.data.message; // Return error in case of failure
+      const message = error?.message; // the api interceptor puts the server's error text here
       return rejectWithValue(message ? message : "Create order failed. Please try again.");
     }
   }

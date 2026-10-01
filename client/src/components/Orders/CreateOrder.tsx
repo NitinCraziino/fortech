@@ -119,7 +119,8 @@ export default function CreateOrder() {
     if (error) {
       errorToast(error);
     }
-  }, [error, errorToast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]);
 
   const calculateTotal = (rowsData: ProductRow[]) => {
     // Calculate total price from all rows' totalAmount
@@ -327,7 +328,8 @@ export default function CreateOrder() {
       success("Order placed.");
       navigate("/orders");
     } catch (error) {
-      errorToast("Error placing order");
+      // The real message is shown by the `error` effect above.
+      console.log("🚀 ~ handleSubmit ~ error:", error);
     }
   };
 

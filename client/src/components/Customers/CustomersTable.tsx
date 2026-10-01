@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronsUpDown, Eye, PencilIcon, CheckCircle, XCircle, MailIcon, ShoppingBag, Percent } from "lucide-react";
+import { ChevronsUpDown, Eye, PencilIcon, CheckCircle, XCircle, MailIcon, ShoppingBag, Percent, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,6 +87,12 @@ export function CustomersTable(props: any) {
   const handleManageTax = (customer: Customer) => {
     if (props.onManageTax) {
       props.onManageTax(customer);
+    }
+  };
+
+  const handleDeleteCustomer = (customer: Customer) => {
+    if (props.onDeleteCustomer) {
+      props.onDeleteCustomer(customer);
     }
   };
 
@@ -276,6 +282,16 @@ export function CustomersTable(props: any) {
                 className="h-8 w-8"
               >
                 <PencilIcon className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={() => handleDeleteCustomer(customer)}
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                title="Delete customer"
+              >
+                <Trash2 className="h-4 w-4 text-red-600" />
+                <span className="sr-only">Delete Customer</span>
               </Button>
               {!customer.active ? (
                 <Button

@@ -1,5 +1,5 @@
 // src/redux/slices/authSlice.ts
-import { getApi, postApi, putApi } from "@/api/api";
+import { deleteApi, getApi, postApi, putApi } from "@/api/api";
 import {
   CREATEPRODUCT,
   GETALLPRODUCTS,
@@ -18,6 +18,9 @@ import {
   TOGGLECUSTOMERPRODUCTTAXSTATUS,
   TOGGLEBULKCUSTOMERPRODUCTFAVORITESTATUS,
   TOGGLECUSTOMERPRODUCTFAVORITESTATUS,
+  DELETEPRODUCT,
+  GETPRODUCTCUSTOMERPRICES,
+  BULKUPDATECUSTOMERPRICES,
 } from "@/api/apiConstants";
 import { BulkAssignPayload } from "@/types/product";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
@@ -380,6 +383,38 @@ export const assignProductsToCustomersAsync = createAsyncThunk(
   }
 );
 
+export const getProductCustomerPricesAsync = createAsyncThunk(
+  "product/getProductCustomerPrices",
+  async ({ productId }: { productId: string }, { rejectWithValue }) => {
+    try {
+      const response = await getApi(GETPRODUCTCUSTOMERPRICES.replace(":productId", productId), {}, {}, false);
+      return response.prices as Array<{ customerId: string; price: number }>;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      return rejectWithValue(error?.message || "Could not load customer prices.");
+    }
+  }
+);
+
+export const bulkUpdateCustomerPricesAsync = createAsyncThunk(
+  "product/bulkUpdateCustomerPrices",
+  async (
+    payload: { productId: string; customerIds: string[]; mode: "fixed" | "percent"; value: number },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await postApi(BULKUPDATECUSTOMERPRICES, payload, {}, false);
+      return response as {
+        updated: Array<{ customerId: string; name: string; oldPrice: number; newPrice: number }>;
+        skipped: Array<{ customerId: string; name: string }>;
+      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      return rejectWithValue(error?.message || "Price update failed. Please try again.");
+    }
+  }
+);
+
 export const toggleCustomerProductFavoriteStatus = createAsyncThunk(
   "product/toggleFavoriteStatus",
   async ({ productId, isFavorite, customerId }: { productId: string; isFavorite: boolean; customerId: string; }, { rejectWithValue }) => {
@@ -406,6 +441,19 @@ export const bulkToggleCustomerProductFavoriteStatus = createAsyncThunk(
   }
 );
 
+export const deleteProductAsync = createAsyncThunk(
+  "product/delete",
+  async ({ productId }: { productId: string; }, { rejectWithValue }) => {
+    try {
+      await deleteApi(DELETEPRODUCT.replace(":productId", productId), {}, {}, false);
+      return { productId };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      const message = error?.message;
+      return rejectWithValue(message ? message : "Delete failed. Please try again.");
+    }
+  }
+);
 
 // Create the auth slice
 const productSlice = createSlice({
@@ -626,6 +674,20 @@ const productSlice = createSlice({
       });
 
     builder
+      .addCase(deleteProductAsync.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteProductAsync.fulfilled, (state, action) => {
+        state.loading = false;
+        state.products = state.products.filter((product) => product._id !== action.payload.productId);
+      })
+      .addCase(deleteProductAsync.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    builder
       .addCase(assignProductsToCustomersAsync.pending, (state) => {
         state.loading = true;
       })
@@ -633,6 +695,19 @@ const productSlice = createSlice({
         state.loading = false;
       })
       .addCase(assignProductsToCustomersAsync.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    builder
+      .addCase(bulkUpdateCustomerPricesAsync.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(bulkUpdateCustomerPricesAsync.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(bulkUpdateCustomerPricesAsync.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

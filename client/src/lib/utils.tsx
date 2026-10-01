@@ -47,6 +47,7 @@ export const useToastActions = () => {
       title: title || "Error",
       description: message,
       variant: "destructive",
+      duration: 8000,
     });
   };
 

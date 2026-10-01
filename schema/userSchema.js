@@ -29,6 +29,13 @@ const UserSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // Soft delete. A deleted customer is hidden from the customer list and
+    // cannot log in, but the record stays so their past orders still show
+    // the customer's name and email.
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   {timestamps: true}
 );

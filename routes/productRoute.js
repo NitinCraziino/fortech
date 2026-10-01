@@ -16,7 +16,10 @@ const {
   toggleProductStockStatus,
   bulkToggleProductStockStatus,
   toggleCustomerProductFavoriteStatus,
-  bulkToggleCustomerProductFavoriteStatus
+  bulkToggleCustomerProductFavoriteStatus,
+  deleteProduct,
+  getProductCustomerPrices,
+  bulkUpdateCustomerPrices
 } = require("../controllers/productController");
 const upload = require("../helpers/multerConfig");
 const router = express.Router();
@@ -37,5 +40,8 @@ router.put("/toggleStockStatus", jwtAuthMiddleware, toggleProductStockStatus);
 router.put("/bulkToggleStockStatus", jwtAuthMiddleware, bulkToggleProductStockStatus);
 router.put("/toggleCustomerProductFavorite", jwtAuthMiddleware, toggleCustomerProductFavoriteStatus);
 router.put("/toggleBulkCustomerProductFavorite", jwtAuthMiddleware, bulkToggleCustomerProductFavoriteStatus);
+router.get("/:productId/customerPrices", jwtAuthMiddleware, getProductCustomerPrices);
+router.post("/bulkUpdateCustomerPrices", jwtAuthMiddleware, bulkUpdateCustomerPrices);
+router.delete("/:productId", jwtAuthMiddleware, deleteProduct);
 
 module.exports = router;

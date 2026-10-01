@@ -42,8 +42,8 @@ const forgotPassword = async (req, res) => {
   try {
     const normalizedEmail = req.body.email.toLowerCase();
     const existingUser = await User.findOne({ email: normalizedEmail });
-    if (!existingUser) {
-      res.status(400).json({ error: "User with this email does not exist." });
+    if (!existingUser || existingUser.isDeleted) {
+      return res.status(400).json({ error: "User with this email does not exist." });
     }
     const resetToken = jwt.sign({ id: existingUser._id }, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRES_IN,
@@ -68,7 +68,7 @@ const resetPassword = async (req, res) => {
     const { token, newPassword } = req.body;
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
-    if (!user) {
+    if (!user || user.isDeleted) {
       return res.status(400).json({ message: "Invalid or expired token." });
     }
     const hashedPassword = await hashPassword(newPassword);

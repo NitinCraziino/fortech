@@ -10,7 +10,7 @@ const createProduct = async (req, res) => {
   try {
     const image = req.file ? `/uploads/${req.file.filename}` : null;
     const inStock = req.body.inStock !== undefined ? req.body.inStock === 'true' : true;
-    const newProduct = new Product({
+    const productData = {
       partNo: req.body.partNo,
       description: req.body.description,
       unit: req.body.unit,
@@ -19,8 +19,22 @@ const createProduct = async (req, res) => {
       active: true,
       name: req.body.name,
       inStock: inStock,
-    });
-    const savedProduct = await newProduct.save();
+    };
+    // Part numbers are unique, and a deleted product still holds its part
+    // number. Creating that part number again restores the deleted product
+    // with the new details instead of failing as a duplicate.
+    const deletedProduct = await Product.findOne({partNo: req.body.partNo, isDeleted: true});
+    let savedProduct;
+    if (deletedProduct) {
+      deletedProduct.set({...productData, taxEnabled: true, isDeleted: false});
+      savedProduct = await deletedProduct.save();
+      // Treat it as newly created so it sorts to the top of the product list
+      // (createdAt is immutable through Mongoose, so set it directly).
+      await Product.collection.updateOne({_id: savedProduct._id}, {$set: {createdAt: new Date()}});
+      savedProduct = await Product.findById(savedProduct._id);
+    } else {
+      savedProduct = await new Product(productData).save();
+    }
     res.status(200).json({product: savedProduct});
   } catch (error) {
     res.status(500).json({error: error.message || "Error creating product."});
@@ -75,7 +89,7 @@ const editProduct = async (req, res) => {
 
 const getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find().sort({createdAt: -1}).lean().exec();
+    const products = await Product.find({isDeleted: {$ne: true}}).sort({createdAt: -1}).lean().exec();
     products.forEach(product => {
       product.taxEnabled = typeof product.taxEnabled === "boolean" ? product.taxEnabled : true;
     });
@@ -315,6 +329,15 @@ const importCustomerProducts = async (req, res) => {
         });
         product = await newProduct.save(); // Create new product
         console.log(`New product added: ${productName}`);
+      } else if (product.isDeleted) {
+        // Importing the part number of a deleted product restores it. Only
+        // overwrite the fields the CSV row provides.
+        const restored = {name: productName, unitPrice, active: true, taxEnabled: true, isDeleted: false};
+        if (description) restored.description = description;
+        if (unit) restored.unit = unit;
+        product.set(restored);
+        product = await product.save();
+        console.log(`Deleted product restored: ${productName}`);
       }
 
       const existingCustomerProduct = await CustomerProduct.findOne({
@@ -372,7 +395,8 @@ const assignProductsToCustomers = async (req, res) => {
 
     // Verify all products exist
     const products = await Product.find({
-      _id: {$in: productIds}
+      _id: {$in: productIds},
+      isDeleted: {$ne: true}
     });
 
     if (products.length !== productIds.length) {
@@ -382,7 +406,8 @@ const assignProductsToCustomers = async (req, res) => {
     // Verify all customers exist and are not admins
     const customers = await User.find({
       _id: {$in: customerIds},
-      admin: false
+      admin: false,
+      isDeleted: {$ne: true}
     });
 
     if (customers.length !== customerIds.length) {
@@ -544,6 +569,36 @@ const bulkToggleProductStockStatus = async (req, res) => {
   }
 };
 
+// Soft-delete a product: hide it from the product list and remove it from
+// every customer's item list. The record stays so past orders still show the
+// product's name and part number.
+const deleteProduct = async (req, res) => {
+  try {
+    if (!req.user.admin) {
+      return res.status(400).json({error: "Invalid Permissions"});
+    }
+
+    const product = await Product.findOneAndUpdate(
+      {_id: req.params.productId, isDeleted: {$ne: true}},
+      {isDeleted: true, active: false},
+      {new: true}
+    );
+
+    if (!product) {
+      return res.status(400).json({error: "Invalid product"});
+    }
+
+    await CustomerProduct.updateMany(
+      {"products.productId": product._id},
+      {$pull: {products: {productId: product._id}}}
+    );
+
+    res.status(200).json({message: "Product deleted successfully"});
+  } catch (error) {
+    res.status(500).json({error: error.message || "Error deleting product."});
+  }
+};
+
 // Add this function to toggle tax status for a customer-specific product
 const toggleCustomerProductTaxStatus = async (req, res) => {
   try {
@@ -659,8 +714,122 @@ const bulkToggleCustomerProductFavoriteStatus = async (req, res) => {
 };
 
 
+// Which customers have this product on their item list, and at what price.
+// Used by the "Change prices" popup on the Products page so the admin can
+// see the current price per customer before changing it.
+const getProductCustomerPrices = async (req, res) => {
+  try {
+    if (!req.user.admin) return res.status(400).json({error: "Invalid Permissions"});
+
+    const {productId} = req.params;
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({error: "Invalid product"});
+    }
+
+    const docs = await CustomerProduct.find({"products.productId": productId})
+      .select("customerId products.productId products.price")
+      .lean();
+
+    const prices = docs.map((doc) => {
+      const row = doc.products.find((p) => p.productId.toString() === productId);
+      return {customerId: doc.customerId, price: row ? row.price : null};
+    });
+
+    res.status(200).json({prices});
+  } catch (error) {
+    res.status(500).json({error: error.message || "Error getting customer prices."});
+  }
+};
+
+// Change one product's customer price for many customers at once.
+// mode "fixed": every selected customer gets price = value.
+// mode "percent": every selected customer's current price changes by value %
+// (e.g. 5 = +5%, -10 = -10%). Customers who do not have the product on their
+// list are skipped and reported back, nothing is added to their list.
+const bulkUpdateCustomerPrices = async (req, res) => {
+  try {
+    if (!req.user.admin) return res.status(400).json({error: "Invalid Permissions"});
+
+    const {productId, customerIds, mode} = req.body;
+    const value = Number(req.body.value);
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({error: "Invalid product"});
+    }
+    if (!Array.isArray(customerIds) || customerIds.length === 0) {
+      return res.status(400).json({error: "Select at least one customer"});
+    }
+    if (!customerIds.every((id) => mongoose.Types.ObjectId.isValid(id))) {
+      return res.status(400).json({error: "Invalid customer"});
+    }
+    if (mode !== "fixed" && mode !== "percent") {
+      return res.status(400).json({error: "mode must be 'fixed' or 'percent'"});
+    }
+    if (!Number.isFinite(value)) {
+      return res.status(400).json({error: "Enter a valid number"});
+    }
+    if (mode === "fixed" && value < 0) {
+      return res.status(400).json({error: "Price cannot be negative"});
+    }
+    if (mode === "percent" && value <= -100) {
+      return res.status(400).json({error: "Percentage must be greater than -100"});
+    }
+
+    const product = await Product.findOne({_id: productId, isDeleted: {$ne: true}}).lean();
+    if (!product) {
+      return res.status(400).json({error: "Product not found"});
+    }
+
+    const customers = await User.find({
+      _id: {$in: customerIds},
+      admin: false,
+      isDeleted: {$ne: true},
+    }).select("name").lean();
+    if (customers.length !== new Set(customerIds.map(String)).size) {
+      return res.status(400).json({error: "One or more customers not found"});
+    }
+    const nameById = Object.fromEntries(customers.map((c) => [c._id.toString(), c.name]));
+
+    const docs = await CustomerProduct.find({
+      customerId: {$in: customerIds},
+      "products.productId": productId,
+    }).lean();
+
+    const ops = [];
+    const updated = [];
+    for (const doc of docs) {
+      const row = doc.products.find((p) => p.productId.toString() === productId);
+      if (!row) continue;
+      const oldPrice = Number(row.price) || 0;
+      const newPrice = mode === "fixed"
+        ? Number(value.toFixed(2))
+        : Number((oldPrice * (1 + value / 100)).toFixed(2));
+      ops.push({
+        updateOne: {
+          filter: {_id: doc._id, "products.productId": row.productId},
+          update: {$set: {"products.$.price": newPrice}},
+        },
+      });
+      updated.push({customerId: doc.customerId, name: nameById[doc.customerId.toString()], oldPrice, newPrice});
+    }
+    if (ops.length) await CustomerProduct.bulkWrite(ops);
+
+    const updatedIds = new Set(updated.map((u) => u.customerId.toString()));
+    const skipped = customerIds
+      .filter((id) => !updatedIds.has(String(id)))
+      .map((id) => ({customerId: id, name: nameById[String(id)]}));
+
+    res.status(200).json({updated, skipped});
+  } catch (error) {
+    res.status(500).json({error: error.message || "Error updating prices."});
+  }
+};
+
 module.exports = {
+  getProductCustomerPrices,
+  bulkUpdateCustomerPrices,
   createProduct,
+  deleteProduct,
   updateProductStatus,
   editProduct,
   getAllProducts,

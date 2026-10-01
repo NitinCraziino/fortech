@@ -1,5 +1,5 @@
 const express = require("express");
-const {inviteCustomer, createAdmin, getCustomers, deleteCustomerProduct, getCustomer, updateCustomerNameAndEmail, updateCustomerTaxSetting} = require("../controllers/userController");
+const {inviteCustomer, createAdmin, getCustomers, deleteCustomerProduct, getCustomer, updateCustomerNameAndEmail, updateCustomerTaxSetting, deleteCustomer} = require("../controllers/userController");
 const jwtAuthMiddleware = require("../middleware/jwtAuthMiddelWare");
 const upload = require("../helpers/multerConfig");
 const {toggleCustomerProductTaxStatus} = require("../controllers/productController");
@@ -13,5 +13,6 @@ router.post("/deleteCustomerProduct", jwtAuthMiddleware, deleteCustomerProduct)
 router.put("/toggleTaxSetting", jwtAuthMiddleware, toggleCustomerProductTaxStatus);
 router.patch("/updateNameAndEmail/:id", jwtAuthMiddleware, updateCustomerNameAndEmail)
 router.put("/updateCustomerTax", jwtAuthMiddleware, updateCustomerTaxSetting)
+router.delete("/deleteCustomer/:id", jwtAuthMiddleware, deleteCustomer)
 
 module.exports = router;
