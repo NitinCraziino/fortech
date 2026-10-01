@@ -14,7 +14,8 @@ passport.use(
 
         // Find user by email
         const user = await User.findOne({ email: normalizedEmail });
-        if (!user || user.isDeleted) {
+        // No password yet = invited but not activated; treat as a bad login.
+        if (!user || user.isDeleted || !user.password) {
           return done(null, false, { message: "Invalid email or password" });
         }
 
