@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ChevronsUpDown, Eye, Pencil, Heart } from "lucide-react";
+import { ChevronsUpDown, Eye, Pencil, Heart, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -58,11 +58,13 @@ export const ProductsTable = (props: {
   pageIndex: number;
   pageSize: number;
   updateFavoriteStatus: (isFavorite: boolean, _id: string) => void;
+  deleteProduct: (_id: string) => void;
 }) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+  const [deletingProduct, setDeletingProduct] = React.useState<Product | null>(null);
   const navigate = useNavigate();
 
   const getCols = () => {
@@ -210,13 +212,8 @@ export const ProductsTable = (props: {
       enableHiding: false,
       cell: ({ row }) => {
         const product = row.original;
-        const handleDelete = () => {
-          // Handle delete logic here
-          console.log("Deleting product:", product._id);
-        };
 
         return (
-          <>
             <div className="flex items-center justify-center gap-2">
               <Button
                 onClick={() => navigate(`/view-product/${product._id}`)}
@@ -236,9 +233,16 @@ export const ProductsTable = (props: {
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  {/* <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Trash2 className="h-4 w-4" />
-                    </Button> */}
+                  <Button
+                    onClick={() => setDeletingProduct(product)}
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    title="Delete product"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-600" />
+                    <span className="sr-only">Delete Product</span>
+                  </Button>
                   <Switch
                     onCheckedChange={(e: boolean) => props.updateStatus(e, product._id)}
                     checked={product.active}
@@ -255,12 +259,6 @@ export const ProductsTable = (props: {
                 </Button>
               )}
             </div>
-            <DeleteProductModal
-              open={false}
-              onOpenChange={(e) => console.log(e)}
-              onConfirm={handleDelete}
-            />
-          </>
         );
       },
     });
@@ -340,6 +338,16 @@ export const ProductsTable = (props: {
           </TableBody>
         </Table>
       </div>
+      <DeleteProductModal
+        open={deletingProduct !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingProduct(null);
+        }}
+        onConfirm={() => {
+          if (deletingProduct) props.deleteProduct(deletingProduct._id);
+        }}
+        message={`Are you sure you want to delete "${deletingProduct?.name ?? ""}"? It will be removed from the product list and from every customer's items. Past orders are not affected.`}
+      />
     </div>
   );
 };

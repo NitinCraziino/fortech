@@ -1,5 +1,5 @@
 // src/redux/slices/authSlice.ts
-import { getApi, postApi, putApi } from "@/api/api";
+import { deleteApi, getApi, postApi, putApi } from "@/api/api";
 import {
   CREATEPRODUCT,
   GETALLPRODUCTS,
@@ -18,6 +18,7 @@ import {
   TOGGLECUSTOMERPRODUCTTAXSTATUS,
   TOGGLEBULKCUSTOMERPRODUCTFAVORITESTATUS,
   TOGGLECUSTOMERPRODUCTFAVORITESTATUS,
+  DELETEPRODUCT,
 } from "@/api/apiConstants";
 import { BulkAssignPayload } from "@/types/product";
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
@@ -406,6 +407,19 @@ export const bulkToggleCustomerProductFavoriteStatus = createAsyncThunk(
   }
 );
 
+export const deleteProductAsync = createAsyncThunk(
+  "product/delete",
+  async ({ productId }: { productId: string; }, { rejectWithValue }) => {
+    try {
+      await deleteApi(DELETEPRODUCT.replace(":productId", productId), {}, {}, false);
+      return { productId };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      const message = error?.message;
+      return rejectWithValue(message ? message : "Delete failed. Please try again.");
+    }
+  }
+);
 
 // Create the auth slice
 const productSlice = createSlice({
@@ -621,6 +635,20 @@ const productSlice = createSlice({
         }
       })
       .addCase(updateProductStatusAsync.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    builder
+      .addCase(deleteProductAsync.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteProductAsync.fulfilled, (state, action) => {
+        state.loading = false;
+        state.products = state.products.filter((product) => product._id !== action.payload.productId);
+      })
+      .addCase(deleteProductAsync.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

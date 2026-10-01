@@ -7,8 +7,9 @@ import { CustomersTable } from "./CustomersTable";
 import { InviteCustomerModal } from "../modals/InviteCustomerModal";
 import { CustomerOrdersModal } from "../modals/CustomerOrdersModal";
 import { CustomerTaxModal } from "../modals/CustomerTaxModal";
+import { DeleteCustomerModal } from "../modals/DeleteCustomerModal";
 import { useDispatch, useSelector } from "react-redux";
-import { getCustomersAsync, inviteCustomerAsync, updateCustomerNameAndEmailAsync } from "@/redux/slices/customerSlice";
+import { deleteCustomerAsync, getCustomersAsync, inviteCustomerAsync, updateCustomerNameAndEmailAsync } from "@/redux/slices/customerSlice";
 import { AppDispatch } from "@/store";
 import { useToastActions } from "@/lib/utils";
 import { Spinner } from "../ui/spinner";
@@ -39,6 +40,7 @@ const Customers: React.FC = () => {
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
   const [taxCustomer, setTaxCustomer] = useState<Customer | null>(null);
   const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
+  const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
   const { errorToast, success } = useToastActions();
   const dispatch = useDispatch<AppDispatch>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,6 +49,11 @@ const Customers: React.FC = () => {
   useEffect(() => {
     dispatch(getCustomersAsync({}));
   }, []);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(customers.length / rowsPerPage));
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [customers.length, rowsPerPage, currentPage]);
 
   useEffect(() => {
     if (error) {
@@ -119,6 +126,16 @@ const Customers: React.FC = () => {
     }
   };
 
+  const handleDeleteCustomer = async () => {
+    if (!deletingCustomer) return;
+    try {
+      await dispatch(deleteCustomerAsync({ customerId: deletingCustomer._id })).unwrap();
+      success("Customer deleted.");
+    } catch (error) {
+      console.log("🚀 ~ handleDeleteCustomer ~ error:", error);
+    }
+  };
+
   const handleCloseModal = (open: boolean) => {
     setIsDialogOpen(open);
     if (!open) {
@@ -163,6 +180,7 @@ const Customers: React.FC = () => {
             onReinviteCustomer={handleReinviteCustomer}
             onViewOrders={handleViewOrders}
             onManageTax={handleManageTax}
+            onDeleteCustomer={setDeletingCustomer}
           />
           <Pagination
             currentPage={currentPage}
@@ -194,6 +212,14 @@ const Customers: React.FC = () => {
         onOpenChange={handleTaxModalOpenChange}
         customer={taxCustomer}
         onSaved={() => dispatch(getCustomersAsync({}))}
+      />
+      <DeleteCustomerModal
+        open={deletingCustomer !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingCustomer(null);
+        }}
+        customerName={deletingCustomer?.name ?? ""}
+        onConfirm={handleDeleteCustomer}
       />
     </>
   );

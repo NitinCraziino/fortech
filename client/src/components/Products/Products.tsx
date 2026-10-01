@@ -17,6 +17,7 @@ import {
   toggleCustomerProductTaxStatus,
   toggleCustomerProductFavoriteStatus,
   bulkToggleCustomerProductFavoriteStatus,
+  deleteProductAsync,
 } from "@/redux/slices/productSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
@@ -61,6 +62,10 @@ const Products = () => {
   }, [error]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { user } = useSelector((state: any) => state.auth);
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(products.length / rowsPerPage));
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [products.length, rowsPerPage, currentPage]);
   useEffect(() => {
     if (user.admin) {
       dispatch(getProductsAsync({}));
@@ -124,6 +129,16 @@ const Products = () => {
       await dispatch(toggleCustomerProductFavoriteStatus({ productId, isFavorite, customerId: user._id })).unwrap();
       dispatch(getCustomerProductsAsync({}));
       success("Favorite status updated.");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      await dispatch(deleteProductAsync({ productId })).unwrap();
+      setSelectedProducts(selectedProducts.filter((x) => x._id !== productId));
+      success("Product deleted.");
     } catch (error) {
       console.log(error);
     }
@@ -256,6 +271,7 @@ const Products = () => {
           updateTaxStatus={handleTaxStatusUpdate}
           updateStockStatus={handleStockStatusUpdate}
           updateFavoriteStatus={handleFavoriteStatusUpdate}
+          deleteProduct={handleDeleteProduct}
           selectAll={(isSelected) => {
             if (isSelected) {
               setAllSelected(true);

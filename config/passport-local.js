@@ -14,7 +14,7 @@ passport.use(
 
         // Find user by email
         const user = await User.findOne({ email: normalizedEmail });
-        if (!user) {
+        if (!user || user.isDeleted) {
           return done(null, false, { message: "Invalid email or password" });
         }
 

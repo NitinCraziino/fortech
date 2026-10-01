@@ -14,7 +14,7 @@ passport.use(
   new JwtStrategy(opts, async (jwtPayload, done) => {
     try {
       const user = await User.findById(jwtPayload._id);
-      if (user) {
+      if (user && !user.isDeleted) {
         return done(null, user);
       } else {
         return done(null, false);

@@ -87,7 +87,7 @@ const inviteCustomer = async (req, res) => {
     let savedUser;
 
     if (req.body.customerId) {
-      savedUser = await User.findById(req.body.customerId).select("-password");
+      savedUser = await User.findOne({_id: req.body.customerId, isDeleted: {$ne: true}}).select("-password");
 
       if (!savedUser) {
         return res.status(404).json({error: "Customer not found."});
@@ -96,18 +96,29 @@ const inviteCustomer = async (req, res) => {
       const normalizedEmail = req.body.email.toLowerCase();
 
       const existingUser = await User.findOne({email: normalizedEmail});
-      if (existingUser) {
+      if (existingUser && !existingUser.isDeleted) {
         return res.status(400).json({error: "Email already in use."});
       }
 
-      const newUser = new User({
-        name: req.body.customerName,
-        email: normalizedEmail,
-        admin: false,
-        active: false,
-      });
+      if (existingUser) {
+        // Inviting the email of a deleted customer restores that customer
+        // (their order history and item list come back). They must set a
+        // new password from the invite link.
+        existingUser.name = req.body.customerName;
+        existingUser.isDeleted = false;
+        existingUser.active = false;
+        existingUser.password = undefined;
+        savedUser = await existingUser.save();
+      } else {
+        const newUser = new User({
+          name: req.body.customerName,
+          email: normalizedEmail,
+          admin: false,
+          active: false,
+        });
 
-      savedUser = await newUser.save();
+        savedUser = await newUser.save();
+      }
 
       if (req.file && req.file.path) {
         processCsv(req.file.path, savedUser._id);
@@ -137,13 +148,13 @@ const setPassword = async (req, res) => {
   try {
     // Check if the email already exists
     const hashedPassword = await hashPassword(req.body.password);
-    const updatedUser = await User.findByIdAndUpdate(
-      req.body.userId,
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: req.body.userId, isDeleted: { $ne: true } },
       { password: hashedPassword, active: true },
       { new: true } // Return the updated document
     );
     if (!updatedUser) {
-      res.status(400).json({ error: "User not found." });
+      return res.status(400).json({ error: "User not found." });
     }
     res.status(200).json({ updatedUser });
   } catch (error) {
@@ -155,7 +166,7 @@ const getCustomers = async (req, res) => {
   try {
     const isAdmin = req.user.admin;
     if (isAdmin) {
-      const customers = await User.find({ admin: false }).sort({ createdAt: -1 }).lean().exec();
+      const customers = await User.find({ admin: false, isDeleted: { $ne: true } }).sort({ createdAt: -1 }).lean().exec();
       res.status(200).json({ customers });
     } else {
       res.status(200).json({ customers: [] });
@@ -226,18 +237,32 @@ const processCsv = async (filePath, customerId) => {
         });
         product = await newProduct.save(); // Create new product
         console.log(`New product added: ${productName}`);
+      } else if (product.isDeleted) {
+        // Importing the part number of a deleted product restores it. Only
+        // overwrite the fields the CSV row provides.
+        const restored = {name: productName, unitPrice, active: true, taxEnabled: true, isDeleted: false};
+        if (description) restored.description = description;
+        if (unit) restored.unit = unit;
+        product.set(restored);
+        product = await product.save();
+        console.log(`Deleted product restored: ${productName}`);
       }
 
-      // Add or update customer-specific product and price
-      await CustomerProduct.findOneAndUpdate(
-        { customerId },
-        { 
-          $addToSet: { 
-            products: { productId: product._id, price: customerProductPrice }
-          }
-        },
-        { new: true, upsert: true }
-      );
+      // Add or update customer-specific product and price. $addToSet cannot
+      // detect an existing row (each row gets its own _id), so check first.
+      const alreadyListed = await CustomerProduct.findOne({ customerId, "products.productId": product._id });
+      if (alreadyListed) {
+        await CustomerProduct.updateOne(
+          { customerId, "products.productId": product._id },
+          { $set: { "products.$.price": customerProductPrice } }
+        );
+      } else {
+        await CustomerProduct.findOneAndUpdate(
+          { customerId },
+          { $push: { products: { productId: product._id, price: customerProductPrice } } },
+          { new: true, upsert: true }
+        );
+      }
 
       console.log(`Updated customer ${customerId} with product ${productName} at price ${productPrice}`);
     }
@@ -283,9 +308,15 @@ const updateCustomerNameAndEmail = async (req, res) => {
       return res.status(400).json({error: "Invalid email format"});
     }
 
+    const normalizedEmail = newEmail.trim().toLowerCase();
+    const emailOwner = await User.findOne({email: normalizedEmail}).lean();
+    if (emailOwner && emailOwner._id.toString() !== customerId) {
+      return res.status(400).json({error: "Email already in use."});
+    }
+
     await User.findByIdAndUpdate(customerId, {
       name: newName,
-      email: newEmail,
+      email: normalizedEmail,
     });
 
     res.status(200).json({message: 'Customer name and email updated successfully'});
@@ -294,7 +325,30 @@ const updateCustomerNameAndEmail = async (req, res) => {
   }
 }
 
+// Soft-delete a customer: hide them from the customer list and block their
+// login. Their orders and item list are kept.
+const deleteCustomer = async (req, res) => {
+  try {
+    if (!req.user.admin) return res.status(400).json({error: "Invalid Permissions"});
+
+    const customer = await User.findOneAndUpdate(
+      {_id: req.params.id, admin: false, isDeleted: {$ne: true}},
+      {isDeleted: true},
+      {new: true}
+    ).select("-password");
+
+    if (!customer) {
+      return res.status(400).json({error: "Customer not found"});
+    }
+
+    res.status(200).json({message: "Customer deleted successfully"});
+  } catch (error) {
+    res.status(500).json({error: error.message || "Error deleting customer"});
+  }
+}
+
 module.exports = {
+  deleteCustomer,
   updateCustomerTaxSetting,
   createAdmin,
   inviteCustomer,

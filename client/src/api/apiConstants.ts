@@ -33,3 +33,5 @@ export const FULFILLORDERS = "/order/fulfill";
 export const DELETEORDER = "/order/:orderId";
 export const TOGGLECUSTOMERPRODUCTFAVORITESTATUS = "/product/toggleCustomerProductFavorite";
 export const TOGGLEBULKCUSTOMERPRODUCTFAVORITESTATUS = "/product/toggleBulkCustomerProductFavorite";
+export const DELETEPRODUCT = "/product/:productId";
+export const DELETECUSTOMER = "/user/deleteCustomer/:id";
